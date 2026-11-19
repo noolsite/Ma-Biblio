@@ -1684,7 +1684,8 @@
         #book-list-body tr.book-list-moving { opacity:1 !important; position:relative; z-index:8; background:#f4ead2; }
         html.dark #book-list-body tr.book-list-moving { background:#403722; }
         #book-list-body tr.book-list-moving td { background:inherit; }
-        #book-list-body tr { touch-action:pan-y; }
+        /* Défilement tactile natif dans les deux axes, sur toute la liste. */
+        #section-liste .book-list-wrap, #book-list-table, #book-list-body, #book-list-body tr, #book-list-body td { touch-action: auto; }
         #book-list-body tr { will-change:auto; }
         .book-list-sort-head { cursor: grab; user-select:none; white-space:nowrap; }
         .book-list-sort-head:active { cursor: grabbing; }
@@ -5576,6 +5577,11 @@ html.dark #section-liste #book-list-head th:hover { background:#342f25; }
         const gridEl = document.getElementById('grid-content');
         var gridSortable = null;
         gridSortable = Sortable.create(gridEl, {
+            // Sur écran tactile, laisser le défilement natif prioritaire.
+            delay: 450,
+            delayOnTouchOnly: true,
+            touchStartThreshold: 5,
+            fallbackTolerance: 4,
             animation: 150,
             ghostClass: 'sortable-ghost',
             filter: '.add-card',
