@@ -1767,6 +1767,8 @@ html.dark #section-liste #book-list-body tr.book-list-moving { background:#40372
         .dash-cover-track::-webkit-scrollbar { display:none; }
         .dash-cover-track > div { transition:transform .2s ease; }
         .dash-cover-track > div:hover { transform:translateY(-3px); }
+        .dash-cover-track[data-dragging="1"] { scroll-behavior:auto !important; }
+        .dash-cover-track[data-dragging="1"] > div:hover { transform:none; }
         @media(prefers-reduced-motion:reduce) { .dash-cover-track {scroll-behavior:auto;} .dash-cover-track > div {transition:none;} }
 
 
@@ -2832,14 +2834,65 @@ html.dark #section-liste #book-list-head th:hover { background:#342f25; }
         function initDashboardSort(kind, field) {
             const track = document.getElementById(`my-${kind}-row`);
             if (dashboardSorts[kind] || !window.Sortable) return;
+            let frame = 0, pointer = null, dragged = null, active = false;
+            const remember = e => {
+                const p = e.touches?.[0] || e.changedTouches?.[0] || e;
+                if (Number.isFinite(p.clientX)) pointer = {x:p.clientX,y:p.clientY};
+            };
+            const stopEdgeScroll = () => {
+                active = false; cancelAnimationFrame(frame);
+                document.removeEventListener('pointermove', remember, true);
+                document.removeEventListener('mousemove', remember, true);
+                document.removeEventListener('touchmove', remember, true);
+                pointer = null; dragged = null;
+            };
+            const edgeScroll = () => {
+                if (!active) return;
+                if (pointer && dragged?.parentElement === track) {
+                    const r = track.getBoundingClientRect();
+                    const edge = Math.min(100, r.width / 4);
+                    if (pointer.y >= r.top - 90 && pointer.y <= r.bottom + 90) {
+                        const left = pointer.x < r.left + edge;
+                        const right = pointer.x > r.right - edge;
+                        if (left || right) {
+                            const strength = Math.min(1, Math.max(0, left ? (r.left + edge - pointer.x)/edge : (pointer.x - r.right + edge)/edge));
+                            track.scrollLeft += (left ? -1 : 1) * (2 + 18 * strength);
+                            // Sortable cannot always detect a drop outside the clipped track.
+                            // Move the actual placeholder as successive covers enter the edge.
+                            const x = Math.max(r.left + 1, Math.min(r.right - 1, pointer.x));
+                            const cards = [...track.children].filter(el => el !== dragged && el.dataset.bookId);
+                            const target = left ? cards.find(el => el.getBoundingClientRect().right > x) : [...cards].reverse().find(el => el.getBoundingClientRect().left < x);
+                            if (target) {
+                                const before = left ? target : target.nextElementSibling;
+                                if (before !== dragged && dragged.nextElementSibling !== before) {
+                                    const sortable = dashboardSorts[kind];
+                                    sortable.captureAnimationState();
+                                    track.insertBefore(dragged, before);
+                                    sortable.animateAll();
+                                }
+                            }
+                        }
+                    }
+                }
+                frame = requestAnimationFrame(edgeScroll);
+            };
             dashboardSorts[kind] = new Sortable(track, {
                 draggable: '[data-book-id]', direction: 'horizontal', animation: 220,
                 forceFallback: true, fallbackOnBody: true, fallbackTolerance: 5,
                 delayOnTouchOnly: true, delay: 180, touchStartThreshold: 5,
                 ghostClass: 'dash-order-ghost', fallbackClass: 'dash-order-moving',
-                scroll: true, bubbleScroll: false,
-                onStart() { track.dataset.dragging = '1'; },
+                scroll: false, bubbleScroll: false,
+                onStart(evt) {
+                    track.dataset.dragging = '1';
+                    dragged = evt.item; active = true;
+                    if (evt.originalEvent) remember(evt.originalEvent);
+                    document.addEventListener('pointermove', remember, true);
+                    document.addEventListener('mousemove', remember, true);
+                    document.addEventListener('touchmove', remember, {capture:true, passive:true});
+                    frame = requestAnimationFrame(edgeScroll);
+                },
                 async onEnd() {
+                    stopEdgeScroll();
                     setTimeout(() => { delete track.dataset.dragging; }, 100);
                     if (!currentUser) return;
                     const previous = [];
