@@ -1712,6 +1712,21 @@
         #book-list-filter-toggle:hover, #book-list-filter-toggle[aria-expanded="true"] { background:rgba(197,160,89,.12); }
 
 /* LISTE — finition éditoriale */
+#section-liste .book-list-table th[data-col="title"] {width:19%;}
+#section-liste .book-list-table th[data-col="author"] {width:13%;}
+#section-liste .book-list-table th[data-col="genre"] {width:10%;}
+#section-liste .book-list-table th[data-col="rating"] {width:6%;}
+#section-liste .book-list-table th[data-col="year"], #section-liste .book-list-table th[data-col="readYear"] {width:9%;}
+#section-liste .book-list-table th[data-col="lang"], #section-liste .book-list-table th[data-col="format"] {width:8%;}
+#section-liste .book-list-table th[data-col="pages"] {width:6%;}
+#section-liste .book-list-table th[data-col="status"] {width:12%;}
+#section-liste .list-chip.list-status {border:1px solid transparent;}
+#section-liste .list-status.status-read {background:rgba(70,150,105,.15);color:#36754b;}
+html.dark #section-liste .list-status.status-read {color:#91d3a6;}
+#section-liste .list-status.status-toread {background:rgba(197,160,89,.16);color:#806025;}
+html.dark #section-liste .list-status.status-toread {color:#e2bf79;}
+#section-liste .list-status.status-dnf {background:rgba(128,128,128,.16);color:var(--list-muted);}
+
 #section-liste .book-list-wrap { --list-surface:#fff; --list-alt:#faf8f4; --list-line:#eee9df; --list-hover:#f7f0e1; --list-head:#f4efe5; --list-muted:#776d60; --list-chip:#f2ede3; --list-ink:#302b23; background:var(--list-surface); border:1px solid var(--list-line); border-radius:16px; box-shadow:0 8px 28px rgba(53,40,20,.06); }
 html.dark #section-liste .book-list-wrap { --list-surface:#202020; --list-alt:#242321; --list-line:#34312c; --list-hover:#302b21; --list-head:#29261f; --list-muted:#b9b0a2; --list-chip:#343027; --list-ink:#f2eee6; box-shadow:0 8px 28px rgba(0,0,0,.18); }
 #section-liste .book-list-table th { background:var(--list-head); border-bottom:1px solid var(--list-line); padding:16px 9px; font-size:10px; letter-spacing:.075em; text-align:center; }
@@ -1733,6 +1748,62 @@ html.dark #section-liste #book-list-body tr.book-list-moving { background:#40372
 #section-liste .book-list-count { font-variant-numeric:tabular-nums; white-space:nowrap; }
 #section-liste .book-list-sort-head:hover { color:var(--gold-accent); }
 @media(max-width:760px) { #section-liste .book-list-table td { padding:12px 7px; } }
+
+
+        .dash-cover-track > [data-book-id] { user-select:none; -webkit-user-select:none; }
+        .dash-cover-track > [data-book-id]:active { cursor:grabbing; }
+        .dash-order-moving { opacity:1 !important; cursor:grabbing !important; pointer-events:none; }
+        .dash-order-ghost { opacity:.25; }
+        .dash-cover-track > .dash-order-ghost:hover { transform:none; }
+        /* Dashboard cover carousels */
+        .dash-cover-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+        .dash-cover-head .section-label { margin:0; }
+        .dash-cover-nav { display:flex; gap:7px; }
+        .dash-cover-nav button { width:32px; height:32px; display:grid; place-items:center; border:1px solid rgba(197,160,89,.35); border-radius:50%; color:var(--gold-accent); background:transparent; cursor:pointer; transition:background .2s,opacity .2s; }
+        .dash-cover-nav button:hover:not(:disabled) { background:rgba(197,160,89,.15); }
+        .dash-cover-nav button:disabled { opacity:.25; cursor:default; }
+        .dash-cover-nav button:focus-visible { outline:2px solid var(--gold-accent); outline-offset:2px; }
+        .dash-cover-track { scrollbar-width:none; -ms-overflow-style:none; scroll-behavior:smooth; padding-top:4px; padding-bottom:8px; }
+        .dash-cover-track::-webkit-scrollbar { display:none; }
+        .dash-cover-track > div { transition:transform .2s ease; }
+        .dash-cover-track > div:hover { transform:translateY(-3px); }
+        @media(prefers-reduced-motion:reduce) { .dash-cover-track {scroll-behavior:auto;} .dash-cover-track > div {transition:none;} }
+
+
+/* LISTE : en-tête compact et soigné, sans flèches décalées */
+#section-liste .book-list-table thead #book-list-head th {
+    position:sticky; top:0; height:66px; padding:10px 5px;
+    vertical-align:middle; border-bottom:1px solid rgba(197,160,89,.23);
+    transition:background-color .18s ease,color .18s ease;
+}
+#section-liste #book-list-head .list-head-content {
+    display:flex; align-items:center; justify-content:center;
+    gap:6px; width:100%; min-width:0; line-height:1.4;
+}
+#section-liste #book-list-head .list-head-label {
+    min-width:0; font-size:10px; font-weight:800; letter-spacing:.065em;
+    text-align:center; text-wrap:balance; overflow-wrap:normal;
+}
+#section-liste #book-list-head .sort-indicator {
+    flex:none; display:inline-flex; align-items:center; justify-content:center;
+    width:16px; height:20px; margin:0; border-radius:5px;
+    color:var(--gold-accent); font-size:12px; font-weight:800;
+    opacity:.46; transition:opacity .18s,background .18s,transform .18s;
+}
+#section-liste #book-list-head th:hover { background:rgba(197,160,89,.09); }
+#section-liste #book-list-head th:hover .sort-indicator { opacity:1; }
+#section-liste #book-list-head th.is-sorted {
+    color:var(--gold-accent); box-shadow:inset 0 -2px 0 var(--gold-accent);
+}
+#section-liste #book-list-head th.is-sorted .sort-indicator {
+    opacity:1; background:rgba(197,160,89,.13);
+}
+html.dark #section-liste #book-list-head th:hover { background:#342f25; }
+@media(max-width:900px) {
+    #section-liste #book-list-head .list-head-content {gap:3px;}
+    #section-liste #book-list-head .list-head-label {font-size:9px;letter-spacing:.025em;}
+    #section-liste #book-list-head .sort-indicator {width:12px;font-size:11px;}
+}
 
 </style>
 </head>
@@ -2309,13 +2380,13 @@ html.dark #section-liste #book-list-body tr.book-list-moving { background:#40372
                 </div>
 
                 <div id="my-favorites-card" class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm mt-4 hidden">
-                    <p class="section-label mb-3" data-i18n="dash.myFavorites">⭐ Mes Favoris</p>
-                    <div id="my-favorites-row" class="flex gap-4 overflow-x-auto pb-1"></div>
+                    <div class="dash-cover-head"><p class="section-label mb-3" data-i18n="dash.myFavorites">⭐ Mes Favoris</p><div class="dash-cover-nav"><button type="button" data-direction="-1" aria-label="Défiler vers la gauche" title="Défiler vers la gauche" aria-controls="my-favorites-row"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button><button type="button" data-direction="1" aria-label="Défiler vers la droite" title="Défiler vers la droite" aria-controls="my-favorites-row"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button></div></div>
+                    <div id="my-favorites-row" class="dash-cover-track flex gap-4 overflow-x-auto"></div>
                 </div>
 
                 <div id="my-wishlist-card" class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm mt-4 hidden">
-                    <p class="section-label mb-3" data-i18n="dash.myWishlist">📚 Ma Wishlist</p>
-                    <div id="my-wishlist-row" class="flex gap-4 overflow-x-auto pb-1"></div>
+                    <div class="dash-cover-head"><p class="section-label mb-3" data-i18n="dash.myWishlist">📚 Ma Wishlist</p><div class="dash-cover-nav"><button type="button" data-direction="-1" aria-label="Défiler vers la gauche" title="Défiler vers la gauche" aria-controls="my-wishlist-row"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button><button type="button" data-direction="1" aria-label="Défiler vers la droite" title="Défiler vers la droite" aria-controls="my-wishlist-row"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button></div></div>
+                    <div id="my-wishlist-row" class="dash-cover-track flex gap-4 overflow-x-auto"></div>
                 </div>
 
             </section>
@@ -2756,6 +2827,36 @@ html.dark #section-liste #book-list-body tr.book-list-moving { background:#40372
 
         // Nombre maximum de livres (emplacements) par bibliothèque.
         const MAX_BOOKS = 300;
+
+        const dashboardSorts = {};
+        function initDashboardSort(kind, field) {
+            const track = document.getElementById(`my-${kind}-row`);
+            if (dashboardSorts[kind] || !window.Sortable) return;
+            dashboardSorts[kind] = new Sortable(track, {
+                draggable: '[data-book-id]', direction: 'horizontal', animation: 220,
+                forceFallback: true, fallbackOnBody: true, fallbackTolerance: 5,
+                delayOnTouchOnly: true, delay: 180, touchStartThreshold: 5,
+                ghostClass: 'dash-order-ghost', fallbackClass: 'dash-order-moving',
+                scroll: true, bubbleScroll: false,
+                onStart() { track.dataset.dragging = '1'; },
+                async onEnd() {
+                    setTimeout(() => { delete track.dataset.dragging; }, 100);
+                    if (!currentUser) return;
+                    const previous = [];
+                    [...track.children].forEach((el, index) => {
+                        const book = library.find(b => String(b.id) === el.dataset.bookId);
+                        if (book) { previous.push([book, book[field]]); book[field] = index; }
+                    });
+                    try { await setDoc(doc(db, 'users_libs', currentUser.uid), {books: library}, {merge:true}); }
+                    catch (err) {
+                        previous.forEach(([book, value]) => { if (value === undefined) delete book[field]; else book[field] = value; });
+                        alert('Impossible de sauvegarder le nouvel ordre.');
+                        render();
+                    }
+                }
+            });
+        }
+
         let library = [];
         let currentUser = null;
         let readingChart = null;
@@ -5688,7 +5789,7 @@ html.dark #section-liste #book-list-body tr.book-list-moving { background:#40372
 
         const bookListColumns = [
             ['title','Nom'],['author','Auteur'],['genre','Genre'],['rating','Note'],
-            ['year','Année de sortie'],['readYear','Année de lecture'],['lang','Langue'],['format','Format'],['pages','Pages']
+            ['year','Année de sortie'],['readYear','Année de lecture'],['lang','Langue'],['format','Format'],['pages','Pages'],['status','Statut']
         ];
         let bookListSort = { key: 'title', direction: 1 };
         let draggedBookId = null;
@@ -5696,13 +5797,15 @@ html.dark #section-liste #book-list-body tr.book-list-moving { background:#40372
         const bookListColumnOrder = () => {
             try {
                 const saved = JSON.parse(localStorage.getItem('nool-book-list-columns') || 'null');
-                return Array.isArray(saved) && saved.length === bookListColumns.length ? saved : bookListColumns.map(c=>c[0]);
+                const keys = bookListColumns.map(c=>c[0]);
+                const valid = Array.isArray(saved) ? [...new Set(saved.filter(k=>keys.includes(k)))] : [];
+                return [...valid, ...keys.filter(k=>!valid.includes(k))];
             } catch(e) { return bookListColumns.map(c=>c[0]); }
         };
         const getBookListValues = b => ({
             title:b.title || '', author:b.author || '', genre:b.genre || '', rating:b.rating ?? '',
             year:b.year || '', readYear:(b.end || '').match(/(\d{4})$/)?.[1] || '',
-            lang:b.lang || '', format:b.format || '', pages:b.pages || ''
+            lang:b.lang || '', format:b.format || '', pages:b.pages || '', status:b.isDNF ? 'Abandonné' : b.isToRead ? 'À lire' : 'Lu'
         });
         const persistBookListOrder = async () => {
             try {
@@ -5746,11 +5849,13 @@ html.dark #section-liste #book-list-body tr.book-list-moving { background:#40372
             const order = bookListColumnOrder();
             head.innerHTML = order.map(key => {
                 const col = bookListColumns.find(c=>c[0]===key);
-                const arrow = bookListSort.key===key ? (bookListSort.direction===1 ? ' ▲' : ' ▼') : ' ↕';
-                return `<th data-col="${key}" draggable="true" class="book-list-sort-head" onclick="sortBookList('${key}')" title="Cliquer pour trier · Glisser pour déplacer">${esc(col[1])}<span class="sort-indicator">${arrow}</span></th>`;
+                const active = bookListSort.key===key;
+                const arrow = active ? (bookListSort.direction===1 ? '↑' : '↓') : '↕';
+                return `<th data-col="${key}" draggable="true" class="book-list-sort-head${active ? ' is-sorted' : ''}" aria-sort="${active ? (bookListSort.direction===1 ? 'ascending' : 'descending') : 'none'}" onclick="sortBookList('${key}')" title="Cliquer pour trier · Glisser pour déplacer"><span class="list-head-content"><span class="list-head-label">${esc(col[1])}</span><span class="sort-indicator" aria-hidden="true">${arrow}</span></span></th>`;
             }).join('');
             filtersRow.innerHTML = order.map(key => {
                 const col = bookListColumns.find(c=>c[0]===key);
+                if(key==='status') return `<th data-col="status"><select class="book-list-filter" data-list-filter="status" aria-label="Filtrer le statut" onchange="renderBookList()"><option value="">Tous</option><option value="lu">Lu</option><option value="à lire">À lire</option><option value="abandonné">Abandonné</option></select></th>`;
                 return `<th data-col="${key}"><input class="book-list-filter" data-list-filter="${key}" placeholder="Filtrer" aria-label="Filtrer ${esc(col[1].toLowerCase())}" title="Filtrer ${esc(col[1].toLowerCase())}" oninput="renderBookList()"></th>`;
             }).join('');
             const oldFilters = window.bookListFilterValues || {};
@@ -5767,7 +5872,7 @@ html.dark #section-liste #book-list-body tr.book-list-moving { background:#40372
             if (filterBadge) filterBadge.textContent = activeCount ? `(${activeCount})` : '';
             let rows = (library || []).filter(b => b && b.title).filter(b => {
                 const values = getBookListValues(b);
-                return Object.entries(filters).every(([key,q]) => !q || String(values[key]).toLocaleLowerCase('fr').includes(q));
+                return Object.entries(filters).every(([key,q]) => !q || (key==='status' ? String(values[key]).toLocaleLowerCase('fr')===q : String(values[key]).toLocaleLowerCase('fr').includes(q)));
             });
             rows.sort((a,b) => {
                 if (bookListSort.key==='manual') return library.indexOf(a)-library.indexOf(b);
@@ -5781,17 +5886,17 @@ html.dark #section-liste #book-list-body tr.book-list-moving { background:#40372
                 const v=getBookListValues(b), id=esc(b.id);
                 const cells = order.map(key => {
                     let value = v[key] === '' ? '—' : v[key];
-                    const content = value !== '—' && key === 'genre' ? bookGenres(value).map(g => `<span class="list-chip">${esc(g)}</span>`).join(' ') : value !== '—' && ['lang','format'].includes(key) ? `<span class="list-chip">${esc(value)}</span>` : key==='rating' && value!=='—' ? `<span class="list-rating">${esc(value)}<span class="list-rating-star" aria-hidden="true">★</span></span>` : esc(value);
+                    const content = key==='status' ? `<span class="list-chip list-status ${b.isDNF?'status-dnf':b.isToRead?'status-toread':'status-read'}">${esc(value)}</span>` : value !== '—' && key === 'genre' ? bookGenres(value).map(g => `<span class="list-chip">${esc(g)}</span>`).join(' ') : value !== '—' && ['lang','format'].includes(key) ? `<span class="list-chip">${esc(value)}</span>` : key==='rating' && value!=='—' ? `<span class="list-rating">${esc(value)}<span class="list-rating-star" aria-hidden="true">★</span></span>` : esc(value);
                     return `<td data-col="${key}" class="${key==='title'?'book-name':''}">${content}</td>`;
                 }).join('');
                 return `<tr data-book-row data-book-id="${id}" draggable="false" class="${selectedBookIds.has(String(b.id))?'book-list-selected':''}" onclick="if(event.target.closest('input'))return; if(event.ctrlKey||event.metaKey){toggleBookListSelection('${id}',!selectedBookIds.has('${id}'));lastSelectedBookId='${id}';return;} if(event.shiftKey&&lastSelectedBookId){selectBookListRange(lastSelectedBookId,'${id}');return;} showSection('fiches', true); setTimeout(()=>document.getElementById('fiche-scroll-${Number(b.id)}')?.scrollIntoView({behavior:'smooth',block:'start'}),80)" style="cursor:grab">${cells}</tr>`;
-            }).join('') : '<tr><td colspan="9" class="text-center py-10 text-slate-400">Aucun livre ne correspond aux filtres.</td></tr>';
+            }).join('') : '<tr><td colspan="10" class="text-center py-10 text-slate-400">Aucun livre ne correspond aux filtres.</td></tr>';
             const count = document.getElementById('book-list-count');
             if (count) count.textContent = `${rows.length} livre${rows.length > 1 ? 's' : ''}`;
             bindBookListDrag();
             if (activeFilter) {
                 const next=document.querySelector(`[data-list-filter="${activeFilter}"]`);
-                if(next){ next.focus({preventScroll:true}); if(caret!==null) next.setSelectionRange(caret,caret); }
+                if(next){ next.focus({preventScroll:true}); if(caret!=null && next.setSelectionRange) next.setSelectionRange(caret,caret); }
             }
         };
         window.selectBookListRange = (fromId,toId) => {
@@ -6023,27 +6128,29 @@ html.dark #section-liste #book-list-body tr.book-list-moving { background:#40372
                 `;
             }).join('');
 
-            const myFavorites = library.filter(b => b.title && b.isMyFavorite);
+            const myFavorites = library.filter(b => b.title && b.isMyFavorite).sort((a,b) => (a.dashboardFavoriteOrder ?? Number.MAX_SAFE_INTEGER) - (b.dashboardFavoriteOrder ?? Number.MAX_SAFE_INTEGER));
             const myFavCard = document.getElementById('my-favorites-card');
             myFavCard.classList.toggle('hidden', myFavorites.length === 0);
             document.getElementById('my-favorites-row').innerHTML = myFavorites.map(b => `
-                <div class="shrink-0 w-20 cursor-pointer" onclick="jumpToFiche(${b.id})" title="${(b.title || '').replace(/"/g, '&quot;')}">
+                <div data-book-id="${b.id}" class="shrink-0 w-20 cursor-grab" onclick="if (!this.parentElement.dataset.dragging) jumpToFiche(${b.id})" title="${(b.title || '').replace(/"/g, '&quot;')}">
                     <div class="w-20 h-28 rounded-lg overflow-hidden shadow-sm border border-slate-100 flex items-center justify-center bg-slate-50">
-                        ${b.cover ? `<img src="${b.cover}" referrerpolicy="no-referrer" class="w-full h-full object-cover">` : `<span class="text-[9px] font-bold text-center px-1 text-slate-400 uppercase leading-tight">${b.title}</span>`}
+                        ${b.cover ? `<img draggable="false" src="${b.cover}" referrerpolicy="no-referrer" class="w-full h-full object-cover">` : `<span class="text-[9px] font-bold text-center px-1 text-slate-400 uppercase leading-tight">${b.title}</span>`}
                     </div>
                 </div>
             `).join('');
+            initDashboardSort('favorites', 'dashboardFavoriteOrder');
 
-            const myWishlist = library.filter(b => b.title && b.isToRead);
+            const myWishlist = library.filter(b => b.title && b.isToRead).sort((a,b) => (a.dashboardWishlistOrder ?? Number.MAX_SAFE_INTEGER) - (b.dashboardWishlistOrder ?? Number.MAX_SAFE_INTEGER));
             const myWishlistCard = document.getElementById('my-wishlist-card');
             myWishlistCard.classList.toggle('hidden', myWishlist.length === 0);
             document.getElementById('my-wishlist-row').innerHTML = myWishlist.map(b => `
-                <div class="shrink-0 w-20 cursor-pointer" onclick="jumpToFiche(${b.id})" title="${(b.title || '').replace(/"/g, '&quot;')}">
+                <div data-book-id="${b.id}" class="shrink-0 w-20 cursor-grab" onclick="if (!this.parentElement.dataset.dragging) jumpToFiche(${b.id})" title="${(b.title || '').replace(/"/g, '&quot;')}">
                     <div class="w-20 h-28 rounded-lg overflow-hidden shadow-sm border border-slate-100 flex items-center justify-center bg-slate-50">
-                        ${b.cover ? `<img src="${b.cover}" referrerpolicy="no-referrer" class="w-full h-full object-cover">` : `<span class="text-[9px] font-bold text-center px-1 text-slate-400 uppercase leading-tight">${b.title}</span>`}
+                        ${b.cover ? `<img draggable="false" src="${b.cover}" referrerpolicy="no-referrer" class="w-full h-full object-cover">` : `<span class="text-[9px] font-bold text-center px-1 text-slate-400 uppercase leading-tight">${b.title}</span>`}
                     </div>
                 </div>
             `).join('');
+            initDashboardSort('wishlist', 'dashboardWishlistOrder');
 
             let bestBook;
             if (isAllYears) {
@@ -7834,5 +7941,29 @@ html.dark #section-liste #book-list-body tr.book-list-moving { background:#40372
   <input id="deco-size-range" type="range" min="30" max="300" step="5" value="100" oninput="previewDecorationSize(this.value)" onchange="saveShelfDecorations()" aria-label="Taille de l'objet">
   <div style="display:flex;justify-content:space-between;margin-top:12px"><button type="button" onclick="resetDecorationSize()" style="padding:8px 12px;border:1px solid #777;border-radius:8px">Réinitialiser</button><button type="button" onclick="closeDecorationSize()" style="padding:8px 18px;background:#c5a059;color:#171717;border-radius:8px;font-weight:bold">Terminé</button></div>
 </div>
+<script>
+(() => {
+  for (const kind of ['favorites','wishlist']) {
+    const track = document.getElementById(`my-${kind}-row`);
+    const nav = document.querySelector(`#my-${kind}-card .dash-cover-nav`);
+    const [prev,next] = nav.querySelectorAll('button');
+    const update = () => {
+      const max = track.scrollWidth - track.clientWidth;
+      prev.disabled = track.scrollLeft <= 1;
+      next.disabled = track.scrollLeft >= max - 1;
+      nav.style.visibility = max <= 1 ? 'hidden' : 'visible';
+    };
+    nav.addEventListener('click', e => {
+      const btn = e.target.closest('button[data-direction]');
+      if (!btn || btn.disabled) return;
+      track.scrollBy({left: Number(btn.dataset.direction) * Math.max(96, track.clientWidth * .7), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
+    });
+    track.addEventListener('scroll', update, {passive:true});
+    new ResizeObserver(update).observe(track);
+    new MutationObserver(update).observe(track,{childList:true});
+    update();
+  }
+})();
+</script>
 </body>
 </html>
