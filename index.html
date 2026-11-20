@@ -4619,12 +4619,13 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
         // les emplacements déjà choisis par l'utilisateur.
         function reconcileShelfPositions(allBooks, visibleBooks, reuseExistingRows = false) {
             visibleBooks = visibleBooks || allBooks;
-            const idSet = new Set(allBooks.map(b => b.uid));
+            const booksByUid = new Map(allBooks.map(b => [b.uid, b]));
+            const idSet = new Set(booksByUid.keys());
             Object.keys(shelfPositions).forEach(id => { if (!idSet.has(id)) delete shelfPositions[id]; });
 
             const rowExtent = Array(SHELF_ROW_COUNT).fill(0);
             Object.entries(shelfPositions).forEach(([id, pos]) => {
-                const book = allBooks.find(b => b.uid === id);
+                const book = booksByUid.get(id);
                 if (!book) return;
                 rowExtent[pos.row] = Math.max(rowExtent[pos.row], pos.x + spineWidthFor(book));
             });
@@ -5345,22 +5346,39 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                 updateBookcaseWidth();
                 return;
             }
-            rowElements.forEach(el => { if (el) el.innerHTML = ''; });
-
+            // Conserver les nœuds inchangés et leurs mesures de titres.
+            const existing = new Map();
+            rowElements.forEach(row => {
+                if (!row) return;
+                row.querySelectorAll('.bookshelf-empty').forEach(el => el.remove());
+                row.querySelectorAll('.shelf-spine').forEach(el => existing.set(el.dataset.id, el));
+            });
             const fragments = rowElements.map(() => document.createDocumentFragment());
             const titles = [];
             books.forEach(b => {
                 const pos = shelfPositions[b.uid];
-                const wrapper = document.createElement('div');
-                wrapper.innerHTML = spineHTML(b);
-                const spineEl = wrapper.firstElementChild;
-                spineEl.style.left = pos.x + 'px';
-                fragments[pos.row].appendChild(spineEl);
-                initShelfDrag(spineEl, b);
-                const title = spineEl.querySelector('.shelf-spine-title');
-                if (title) titles.push(title);
+                if (!pos || !rowElements[pos.row]) return;
+                const key = String(b.uid || b.id);
+                const html = spineHTML(b);
+                let spineEl = existing.get(key);
+                existing.delete(key);
+                if (!spineEl || spineEl._shelfHTML !== html || spineEl._shelfBook !== b) {
+                    spineEl?.remove();
+                    const wrapper = document.createElement('div');
+                    wrapper.innerHTML = html;
+                    spineEl = wrapper.firstElementChild;
+                    spineEl._shelfHTML = html;
+                    spineEl._shelfBook = b;
+                    initShelfDrag(spineEl, b);
+                    const title = spineEl.querySelector('.shelf-spine-title');
+                    if (title) titles.push(title);
+                }
+                const left = pos.x + 'px';
+                if (spineEl.style.left !== left) spineEl.style.left = left;
+                if (spineEl.parentElement !== rowElements[pos.row]) fragments[pos.row].appendChild(spineEl);
             });
-            rowElements.forEach((el, i) => el.appendChild(fragments[i]));
+            existing.forEach(el => el.remove());
+            rowElements.forEach((el, i) => { if (el) el.appendChild(fragments[i]); });
             // Mesures groupées : évite un recalcul de mise en page pour chaque livre.
             const widths = titles.map(el => el.parentElement.clientWidth * 0.88);
             let pending = titles.map((el, i) => ({el, width: widths[i]}));
