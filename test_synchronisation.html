@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V8 — Test synchronisation</title>
+    <title>Nool — TEST V10 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -1922,8 +1922,16 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
 
 @media(max-width:767px) { #section-bibliotheque.active { animation:none; } }
 /* Compact fiche toolbar, shared controls retained in Ma Grille. */
-#fiche-top-pager { display:none; }
-html:has(#section-fiches.active) #fiche-top-pager:not(:empty) { display:flex; justify-content:flex-end; }
+#fiche-top-pager, #fiche-bottom-pager { display:none; }
+html:has(#section-fiches.active) #fiche-top-pager:not(:empty),
+html:has(#section-fiches.active) #fiche-bottom-pager:not(:empty) { display:flex; justify-content:flex-end; }
+#fiche-bottom-pager:not(:empty) { margin-top:24px; margin-bottom:12px; }
+/* Same centered width as the upper toolbar and book cards. */
+#fiche-top-pager, #fiche-bottom-pager { box-sizing:border-box; width:100%; max-width:900px; margin-inline:auto; }
+@media(max-width:767px) {
+ #section-fiches #fiches-content { padding-bottom:0; }
+ #fiche-bottom-pager:not(:empty) { margin-bottom:calc(115px + env(safe-area-inset-bottom)); }
+}
 html:has(#section-fiches.active) #bulk-import-btn { display:none !important; }
 html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
 @media(min-width:768px) {
@@ -2533,6 +2541,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
 
             <section id="section-fiches" class="view-section">
                 <div id="fiches-content" class="space-y-20"></div>
+                <div id="fiche-bottom-pager" aria-live="polite"></div>
             </section>
 
             <section id="section-liste" class="view-section">
@@ -7002,7 +7011,9 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
                 ficheJumpTarget = null;
             }
             fichePage = Math.min(fichePage, Math.max(0, Math.ceil(filteredFiches.length / fichePageSize)-1));
-            document.getElementById('fiche-top-pager').innerHTML = fichePager(filteredFiches.length);
+            const pagerMarkup = fichePager(filteredFiches.length);
+            document.getElementById('fiche-top-pager').innerHTML = pagerMarkup;
+            document.getElementById('fiche-bottom-pager').innerHTML = pagerMarkup;
             document.getElementById('fiches-content').innerHTML = filteredFiches.length > 0 ? filteredFiches.slice(fichePage * fichePageSize, (fichePage+1)*fichePageSize).map(book => `
                 <div id="fiche-scroll-${book.id}" data-fiche-id="${book.id}" class="fiche-container ${gridSelectMode ? 'fiche-select-mode' : ''} ${gridSelectMode && selectedGridIds.has(book.id) ? 'fiche-selected' : ''}">
                     ${gridSelectMode ? `<button type="button" class="fiche-check ${selectedGridIds.has(book.id) ? 'checked' : ''}" aria-label="Sélectionner le livre" aria-pressed="${selectedGridIds.has(book.id)}">${selectedGridIds.has(book.id) ? '✓' : ''}</button>` : ''}
