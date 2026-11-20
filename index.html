@@ -2657,6 +2657,17 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                         <button onclick="openGoodreadsImport()" id="goodreads-import-btn" class="shrink-0 flex items-center gap-1.5 text-[9px] font-black text-white uppercase tracking-widest bg-[#382110] px-4 py-2.5 rounded-full hover:opacity-90 transition-opacity" data-i18n="goodreads.openBtn">📗 Importer depuis Goodreads</button>
                     </div>
 
+                    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-8" id="nool-backup-panel">
+                        <p class="section-label mb-2" data-i18n="backup.title">Sauvegarde de mes données</p>
+                        <p class="text-sm text-gray-400 mb-5" data-i18n="backup.body">Télécharge une copie privée de tes livres et de tes préférences. La restauration remplace les données de ta bibliothèque.</p>
+                        <div class="flex flex-wrap gap-3">
+                            <button id="nool-backup-export" onclick="exportNoolBackup()" class="px-5 py-3 rounded-xl bg-[var(--gold-accent)] text-black font-bold text-xs" data-i18n="backup.export">↓ Exporter ma bibliothèque</button>
+                            <button id="nool-backup-restore" onclick="document.getElementById('nool-backup-file').click()" class="px-5 py-3 rounded-xl border border-[var(--gold-accent)] font-bold text-xs" data-i18n="backup.restore">↑ Restaurer ma bibliothèque</button>
+                            <input id="nool-backup-file" type="file" accept=".json,application/json" class="hidden" onchange="restoreNoolBackup(this)">
+                        </div>
+                        <p id="nool-backup-status" role="status" aria-live="polite" class="text-xs mt-4"></p>
+                    </div>
+
                     <div id="profile-password-section" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-8 hidden">
                         <p class="section-label mb-4" data-i18n="account.changePassword">Changer le mot de passe</p>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-3">
@@ -2928,7 +2939,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, runTransaction, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, runTransaction, deleteDoc, getDocFromServer, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyALZ0tu1jU2OJbGrAmCcAFXVFB5os4-pfY",
@@ -3047,6 +3058,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                 filters: { phoneHint: "Touche un livre pour l'aperçu · appui long pour le déplacer · fais défiler sur le côté", searchPlaceholder: "Recherche rapide (titre, auteur, genre...)", filterBy: "Filtrer par :", toggleBtn: "Filtre", multiSelectBtn: "Sélection", multiSelectHint: "Encadre plusieurs livres à la souris pour les sélectionner, puis glisse-en un pour les déplacer ensemble.", multiSelectHintActive: "livre(s) sélectionné(s) — glisse-en un pour les déplacer ensemble.", allYears: "Toutes les années", allRatings: "Toutes les notes", allGenres: "Tous les genres", allFormats: "Tous les formats", allLanguages: "Toutes les langues", allAuthors: "Tous les auteurs", allMonths: "Tous les mois", allBooks: "Tous les livres", bookOfYear: "👑 Livre de l'année", favoriteBook: "❤️ Livre préféré", myFavorite: "⭐ Mes Favoris", bookClub: "📖 Book Club", dnf: "🚫 DNF", toRead: "📚 À lire", toReadShort: "À LIRE", reset: "Réinitialiser", sortNone: "Ordre habituel", sortSaga: "Par saga (tomes regroupés)", sortDateDesc: "Date de lecture ↓ (récent → ancien)", sortDateAsc: "Date de lecture ↑ (ancien → récent)", sortRatingDesc: "Note ↓ (meilleure → pire)", sortRatingAsc: "Note ↑ (pire → meilleure)", addBook: "+ Ajouter un livre", gridSelectBtn: "☑️ Sélectionner", gridSelectAll: "Tout sélectionner", gridSelectedCount: "{n} sélectionné(s)", gridDeleteSelected: "🗑 Supprimer", gridCancelSelection: "Annuler", emptyFichesTitle: "Aucune fiche pour l'instant", emptyFichesBody: "Commence par ajouter un livre pour voir apparaître sa fiche ici.", emptyFichesBtn: "+ Ajouter mon premier livre" },
                 months: { "01": "Janvier", "02": "Février", "03": "Mars", "04": "Avril", "05": "Mai", "06": "Juin", "07": "Juillet", "08": "Août", "09": "Septembre", "10": "Octobre", "11": "Novembre", "12": "Décembre" },
                 dash: { bookOfYear: "LIVRE DE L'ANNÉE", booksRead: "Livres Lus en", booksReadAll: "Livres Lus", avgRating: "Note Moyenne", min: "min", max: "max", starsOutOf5: "Étoiles sur 5", formatsRead: "Formats Lus", genrePodium: "Podium des Genres", dnfCount: "Livres Abandonnés (DNF)", pagesRead: "Pages lues", pagesTotal: "Total des pages", ofBooks: "des livres", languagesRead: "Langues Lues", authorsRead: "Livres par Auteur", readingPace: "Rythme de lecture (Livres par mois en", readingPaceAll: "Rythme de lecture (Livres par année)", myLibrary: "Ma Bibliothèque", addDecoration: "Ajouter une décoration", shelfSettings: "Réglages de la bibliothèque", addRow: "Ajouter une rangée", allYears: "Toutes les années", noReportAll: "Aucun bilan pour le moment", noReportFor: "Aucun bilan pour", bestBookAll: "MEILLEUR LIVRE", myFavorites: "⭐ Mes Favoris", myWishlist: "📚 Ma Wishlist" },
+                backup: {"title": "Sauvegarde de mes données", "body": "Télécharge une copie privée de tes livres et de tes préférences. La restauration remplace les données de ta bibliothèque.", "export": "↓ Exporter ma bibliothèque", "restore": "↑ Restaurer ma bibliothèque"},
                 account: { backToDashboard: "← Retour au tableau de bord", changePhoto: "Changer la photo", removePhoto: "Retirer la photo", sitePalette: "Palette du site", email: "Email", pseudo: "Pseudo", pseudoPlaceholder: "Choisis un pseudo unique", validatePseudo: "Valider le pseudo", importSectionTitle: "Importer ma bibliothèque", importSectionBody: "Récupère automatiquement tes livres depuis Goodreads (fichier .csv exporté).", changePassword: "Changer le mot de passe", currentPassword: "Mot de passe actuel", newPassword: "Nouveau mot de passe", validate: "Valider" },
                 colors: { gold: "Doré", burgundy: "Bordeaux", forestGreen: "Vert forêt", navyBlue: "Bleu marine", terracotta: "Terracotta", plum: "Prune", anthracite: "Anthracite", custom: "Couleur personnalisée" },
                 auth: { backToHome: "← Retour à l'accueil", memberLogin: "Connexion Membre", memberSignup: "Création de Compte", emailAddress: "Adresse Email", password: "Mot de passe", forgotPassword: "Mot de passe oublié ?", rememberMe: "Rester connecté", openCollection: "Ouvrir ma collection", or: "ou", continueGoogle: "Continuer avec Google", noAccount: "Pas encore de compte ? S'inscrire", haveAccount: "Déjà un compte ? Se connecter" },
@@ -3137,6 +3149,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                 filters: { phoneHint: "Tap a book for a preview · long-press to move it · scroll sideways", searchPlaceholder: "Quick search (title, author, genre...)", filterBy: "Filter by:", toggleBtn: "Filter", multiSelectBtn: "Select", multiSelectHint: "Drag a box around several books to select them, then drag one to move them all together.", multiSelectHintActive: "book(s) selected — drag one to move them all together.", allYears: "All years", allRatings: "All ratings", allGenres: "All genres", allFormats: "All formats", allLanguages: "All languages", allAuthors: "All authors", allMonths: "All months", allBooks: "All books", bookOfYear: "👑 Book of the year", favoriteBook: "❤️ Favorite book", myFavorite: "⭐ My Favorites", bookClub: "📖 Book Club", dnf: "🚫 DNF", toRead: "📚 To read", toReadShort: "TO READ", reset: "Reset", sortNone: "Default order", sortSaga: "By series (volumes together)", sortDateDesc: "Reading date ↓ (newest → oldest)", sortDateAsc: "Reading date ↑ (oldest → newest)", sortRatingDesc: "Rating ↓ (best → worst)", sortRatingAsc: "Rating ↑ (worst → best)", addBook: "+ Add a book", gridSelectBtn: "☑️ Select", gridSelectAll: "Select all", gridSelectedCount: "{n} selected", gridDeleteSelected: "🗑 Delete", gridCancelSelection: "Cancel", emptyFichesTitle: "No sheets yet", emptyFichesBody: "Start by adding a book to see its sheet appear here.", emptyFichesBtn: "+ Add my first book" },
                 months: { "01": "January", "02": "February", "03": "March", "04": "April", "05": "May", "06": "June", "07": "July", "08": "August", "09": "September", "10": "October", "11": "November", "12": "December" },
                 dash: { bookOfYear: "BOOK OF THE YEAR", booksRead: "Books Read in", booksReadAll: "Books Read", avgRating: "Average Rating", min: "min", max: "max", starsOutOf5: "Stars out of 5", formatsRead: "Formats Read", genrePodium: "Genre Podium", dnfCount: "Dropped Books (DNF)", pagesRead: "Pages read", pagesTotal: "Total pages", ofBooks: "of books", languagesRead: "Languages Read", authorsRead: "Books per Author", readingPace: "Reading pace (Books per month in", readingPaceAll: "Reading pace (Books per year)", myLibrary: "My Library", addDecoration: "Add a decoration", shelfSettings: "Library settings", addRow: "Add a row", allYears: "All years", noReportAll: "No data yet", noReportFor: "No data for", bestBookAll: "BEST BOOK", myFavorites: "⭐ My Favorites", myWishlist: "📚 My Wishlist" },
+                backup: {"title": "Back up my data", "body": "Download a private copy of your books and preferences. Restoring replaces your library data.", "export": "↓ Export my library", "restore": "↑ Restore my library"},
                 account: { backToDashboard: "← Back to dashboard", changePhoto: "Change photo", removePhoto: "Remove photo", sitePalette: "Site palette", email: "Email", pseudo: "Username", pseudoPlaceholder: "Choose a unique username", validatePseudo: "Save username", importSectionTitle: "Import my library", importSectionBody: "Automatically pull in your books from Goodreads (exported .csv file).", changePassword: "Change password", currentPassword: "Current password", newPassword: "New password", validate: "Save" },
                 colors: { gold: "Gold", burgundy: "Burgundy", forestGreen: "Forest green", navyBlue: "Navy blue", terracotta: "Terracotta", plum: "Plum", anthracite: "Anthracite", custom: "Custom color" },
                 auth: { backToHome: "← Back to home", memberLogin: "Member Login", memberSignup: "Create Account", emailAddress: "Email Address", password: "Password", forgotPassword: "Forgot password?", rememberMe: "Stay signed in", openCollection: "Open my collection", or: "or", continueGoogle: "Continue with Google", noAccount: "No account yet? Sign up", haveAccount: "Already have an account? Log in" },
@@ -5947,6 +5960,62 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             const sortEl = document.getElementById('filter-sort');
             gridSortable.option('disabled', !!sortEl && sortEl.value !== 'none');
         }
+
+
+        // Versioned, private backup. Never export authentication credentials.
+        const noolBackupKeys = ['biblio-theme','nool-book-list-columns','nool-cover-colors-v1'];
+        const noolBackupProfileKeys = ['photo','themeColor','lang','genreColorOverrides','shelfRowCount','shelfPositions','shelfDecorations','shelfRows','shelfLayouts','activeShelfLayoutId','shelfDecorCleanupV1','hasSeenTutorial'];
+        let noolBackupBusy = false;
+        const backupText = (fr,en) => currentLang === 'en' ? en : fr;
+        function backupStatus(message,error=false) {
+            const el=document.getElementById('nool-backup-status');
+            el.textContent=message; el.style.color=error?'#ef4444':'var(--gold-accent)';
+        }
+        function backupBusy(value) {
+            noolBackupBusy=value;
+            for(const id of ['nool-backup-export','nool-backup-restore']) document.getElementById(id).disabled=value;
+        }
+        async function readNoolBackup(uid) {
+            const [books,profile]=await Promise.all([getDocFromServer(doc(db,'users_libs',uid)),getDocFromServer(doc(db,'user_profiles',uid))]);
+            if(auth.currentUser?.uid!==uid || !books.exists() || !Array.isArray(books.data().books)) throw new Error('Library unavailable');
+            const preferences={};
+            for(const k of noolBackupKeys) {const v=localStorage.getItem(k);if(v!==null) preferences[k]=v;}
+            return {format:'nool-backup',version:1,createdAt:new Date().toISOString(),books:books.data().books,profile:profile.data()||{},preferences};
+        }
+        function downloadNoolBackup(data,prefix='Nool-sauvegarde') {
+            const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+            const a=document.createElement('a');a.href=url;a.download=prefix+'-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+        }
+        window.exportNoolBackup=async()=>{
+            if(noolBackupBusy||!auth.currentUser)return;
+            backupBusy(true);
+            try {
+                if(shelfLayoutDirty && !confirm(backupText('Les modifications non enregistrées des étagères ne seront pas incluses. Continuer ?','Unsaved shelf changes will not be included. Continue?')))return;
+                const data=await readNoolBackup(auth.currentUser.uid);downloadNoolBackup(data);
+                backupStatus(backupText('Sauvegarde préparée : vérifie le fichier dans tes téléchargements.','Backup prepared: check your downloads.'));
+            } catch(e){console.error(e);backupStatus(backupText('Export impossible. Vérifie ta connexion et réessaie.','Export failed. Check your connection and try again.'),true);}
+            finally{backupBusy(false);}
+        };
+        window.restoreNoolBackup=async input=>{
+            const file=input.files?.[0];input.value='';if(!file||noolBackupBusy||!auth.currentUser)return;
+            const uid=auth.currentUser.uid;backupBusy(true);
+            try {
+                if(file.size>25*1024*1024)throw new Error('File too large');
+                const data=JSON.parse(await file.text());
+                if(data?.format!=='nool-backup'||data.version!==1||!Array.isArray(data.books)||!data.profile||Array.isArray(data.profile)||typeof data.profile!=='object'||!data.books.every(b=>b&&typeof b==='object'&&!Array.isArray(b)&&Number.isInteger(b.id)&&typeof b.title==='string')||new Set(data.books.map(b=>b.id)).size!==data.books.length)throw new Error('Invalid backup');
+                const count=data.books.filter(b=>b.title.trim()).length;
+                if(!confirm(backupText(`Restaurer ${count} livres ? Ta bibliothèque et tes dispositions actuelles seront remplacées. Une sauvegarde de sécurité sera téléchargée avant la restauration.`,`Restore ${count} books? Your current library and layouts will be replaced. A safety backup will be downloaded first.`)))return;
+                const before=await readNoolBackup(uid);downloadNoolBackup(before,'Nool-avant-restauration');
+                if(!confirm(backupText('Vérifie que la sauvegarde de sécurité est bien téléchargée avant de confirmer le remplacement.','Check that the safety backup has downloaded before confirming replacement.')))return;
+                if(auth.currentUser?.uid!==uid)throw new Error('Account changed');
+                const profile={...before.profile};
+                for(const k of noolBackupProfileKeys){delete profile[k];if(Object.prototype.hasOwnProperty.call(data.profile,k))profile[k]=data.profile[k];}
+                const batch=writeBatch(db);batch.set(doc(db,'users_libs',uid),{books:data.books},{merge:true});batch.set(doc(db,'user_profiles',uid),profile);await batch.commit();
+                try{for(const k of noolBackupKeys){const v=data.preferences?.[k];if(typeof v==='string')localStorage.setItem(k,v);}}catch(e){console.warn(e);}
+                alert(backupText('Restauration terminée. Nool va se recharger.','Restore complete. Nool will reload.'));location.reload();
+            }catch(e){console.error(e);backupStatus(backupText('Restauration impossible : fichier invalide ou erreur Firebase.','Restore failed: invalid file or Firebase error.'),true);}
+            finally{backupBusy(false);}
+        };
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
