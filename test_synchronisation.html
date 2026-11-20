@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V7 — Test synchronisation</title>
+    <title>Nool — TEST V8 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -1919,6 +1919,24 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
  html:has(:is(#section-grille, #section-fiches).active) #grid-filter-options.mobile-filters-open { padding:10px; border:1px solid color-mix(in srgb,var(--gold-accent) 25%,transparent); border-radius:12px; }
  html:has(:is(#section-grille, #section-fiches).active) #grid-mobile-filter-toggle:has(+ *) { touch-action:manipulation; }
 }
+
+@media(max-width:767px) { #section-bibliotheque.active { animation:none; } }
+/* Compact fiche toolbar, shared controls retained in Ma Grille. */
+#fiche-top-pager { display:none; }
+html:has(#section-fiches.active) #fiche-top-pager:not(:empty) { display:flex; justify-content:flex-end; }
+html:has(#section-fiches.active) #bulk-import-btn { display:none !important; }
+html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
+@media(min-width:768px) {
+ html:has(#section-fiches.active) #grid-action-line { display:none; }
+ html:has(#section-fiches.active) #grid-shared-actions { margin-left:auto; flex-shrink:0; }
+}
+.nool-fiche-pager { display:flex; align-items:center; justify-content:flex-end; gap:6px; color:var(--gold-accent); font-size:12px; }
+.nool-fiche-pager button,.nool-fiche-pager select { border:1px solid color-mix(in srgb,var(--gold-accent) 35%,transparent); border-radius:9px; min-height:34px; background:transparent; color:inherit; padding:5px 10px; font:inherit; }
+.nool-fiche-pager button:not(:disabled):hover { background:color-mix(in srgb,var(--gold-accent) 15%,transparent); }
+.nool-fiche-pager button:disabled { opacity:.3; cursor:default; }
+.nool-fiche-pager select { max-width:95px; }
+.nool-fiche-pager option { color:#222; background:#fff; }
+.nool-fiche-pager .pager-total { opacity:.8; margin-right:6px; }
 </style>
 </head>
 <body>
@@ -2387,14 +2405,15 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                         <button onclick="addNewBookFromLibrary()" id="add-book-btn" class="hidden flex items-center gap-1 text-[9px] font-black text-white uppercase tracking-widest bg-black px-3 py-1.5 rounded-full hover:bg-gold-accent transition-colors" data-i18n="filters.addBook">+ Ajouter un livre</button>
                     </div>
 
-                    <div class="flex items-center gap-2">
+                    <div id="grid-action-line" class="flex items-center gap-2">
                         <button onclick="openBulkImport()" id="bulk-import-btn" class="flex items-center gap-1.5 text-[9px] font-black text-white uppercase tracking-widest bg-[var(--gold-accent)] px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity" data-i18n="bulkImport.openBtn">✨ Import rapide</button>
-                        <div class="ml-auto flex items-center gap-2 sm:gap-3">
+                        <div id="grid-shared-actions" class="ml-auto flex items-center gap-2 sm:gap-3">
                             <button onclick="toggleGridSelectMode()" id="grid-select-toggle-btn" class="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest bg-slate-100 text-slate-500 px-3 py-1.5 rounded-full hover:bg-slate-200 transition-colors" data-i18n="filters.gridSelectBtn">☑️ Sélectionner</button>
                             <button onclick="resetFilters()" class="text-[9px] font-bold text-red-400 uppercase tracking-widest hover:underline" data-i18n="filters.reset">Réinitialiser</button>
                         </div>
                     </div>
 
+                    <div id="fiche-top-pager" aria-live="polite"></div>
                     <div id="grid-select-bar" class="hidden flex items-center justify-between text-xs mt-2 pt-2 border-t border-slate-100">
                         <div class="flex items-center gap-3">
                             <button onclick="selectAllGridBooks()" class="text-[9px] font-black text-slate-500 uppercase tracking-widest hover:underline" data-i18n="filters.gridSelectAll">Tout sélectionner</button>
@@ -6651,11 +6670,13 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             render('fiches');
             window.scrollTo({top: 0, behavior: 'instant'});
         };
+        window.goFichePage = value => { fichePage = Math.max(0, Number(value) || 0); render('fiches'); window.scrollTo({top:0,behavior:'instant'}); };
         function fichePager(total) {
             if (total <= fichePageSize) return '';
             const pages = Math.ceil(total / fichePageSize);
             const en = document.documentElement.lang === 'en';
-            return `<nav aria-label="Pagination" style="display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;padding:12px;color:var(--gold-accent)"><button type="button" onclick="changeFichePage(-1)" ${fichePage===0?'disabled style="opacity:.35"':''}>← ${en?'Previous':'Précédent'}</button><span> ${fichePage+1} / ${pages} · ${total} ${en?'books':'livres'}</span><button type="button" onclick="changeFichePage(1)" ${fichePage>=pages-1?'disabled style="opacity:.35"':''}>${en?'Next':'Suivant'} →</button></nav>`;
+            const options = Array.from({length:pages},(_,i)=>`<option value="${i}" ${i===fichePage?'selected':''}>${i+1} / ${pages}</option>`).join('');
+            return `<nav class="nool-fiche-pager" aria-label="Pagination"><span class="pager-total">${total} ${en?'books':'livres'}</span><button type="button" aria-label="${en?'Previous':'Précédente'}" onclick="changeFichePage(-1)" ${fichePage===0?'disabled':''}>‹</button><select aria-label="Page" onchange="goFichePage(this.value)">${options}</select><button type="button" aria-label="${en?'Next':'Suivante'}" onclick="changeFichePage(1)" ${fichePage>=pages-1?'disabled':''}>›</button></nav>`;
         }
         const libraryViews = ['liste','stats','bibliotheque','grille','fiches'];
         function renderChangedLibrary() {
@@ -6981,7 +7002,8 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                 ficheJumpTarget = null;
             }
             fichePage = Math.min(fichePage, Math.max(0, Math.ceil(filteredFiches.length / fichePageSize)-1));
-            document.getElementById('fiches-content').innerHTML = filteredFiches.length > 0 ? fichePager(filteredFiches.length) + filteredFiches.slice(fichePage * fichePageSize, (fichePage+1)*fichePageSize).map(book => `
+            document.getElementById('fiche-top-pager').innerHTML = fichePager(filteredFiches.length);
+            document.getElementById('fiches-content').innerHTML = filteredFiches.length > 0 ? filteredFiches.slice(fichePage * fichePageSize, (fichePage+1)*fichePageSize).map(book => `
                 <div id="fiche-scroll-${book.id}" data-fiche-id="${book.id}" class="fiche-container ${gridSelectMode ? 'fiche-select-mode' : ''} ${gridSelectMode && selectedGridIds.has(book.id) ? 'fiche-selected' : ''}">
                     ${gridSelectMode ? `<button type="button" class="fiche-check ${selectedGridIds.has(book.id) ? 'checked' : ''}" aria-label="Sélectionner le livre" aria-pressed="${selectedGridIds.has(book.id)}">${selectedGridIds.has(book.id) ? '✓' : ''}</button>` : ''}
                     <div class="flex items-center justify-between gap-4 mb-6 flex-wrap">
@@ -7045,7 +7067,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                         <button onclick="openEdit(${book.id})" class="px-5 py-2 rounded-lg bg-slate-50 text-slate-400 font-bold uppercase text-[10px] tracking-widest hover:text-yellow-600 transition-colors">Modifier</button>
                     </div>
                 </div>
-            `).join('') + fichePager(filteredFiches.length) : `
+            `).join('') : `
                 <div class="fiche-container flex flex-col items-center justify-center text-center py-20" style="border: 2px dashed #e5e0d5; background: transparent; box-shadow: none;">
                     <span class="text-4xl mb-4" style="opacity: .5;">📖</span>
                     <h3 class="font-serif text-lg font-black uppercase tracking-tight mb-2">${t('filters.emptyFichesTitle')}</h3>
@@ -7430,19 +7452,27 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             if (reflowed) { await saveShelfPositions(); await saveShelfDecorations(); }
         };
 
+        function placeSharedFicheActions() {
+            const actions = document.getElementById('grid-shared-actions');
+            const inFiches = document.getElementById('section-fiches').classList.contains('active');
+            const target = document.getElementById(inFiches && window.innerWidth >= 768 ? 'grid-filter-options' : 'grid-action-line');
+            if (actions.parentElement !== target) target.appendChild(actions);
+        }
+        window.addEventListener('resize', placeSharedFicheActions);
         window.showSection = (id, forceScrollTop = false) => {
             if (gridSelectMode && !document.getElementById('section-' + id)?.classList.contains('active')) window.cancelGridSelectMode();
             if(forceScrollTop || (window.innerWidth <= 767 && id === 'fiches')) window.scrollTo({top: 0, behavior: 'instant'});
             document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('section-' + id).classList.add('active');
+            placeSharedFicheActions();
             if (id === 'fiches' && ficheJumpTarget !== null && dirtyViews.has(id)) render(id);
             document.getElementById('btn-' + id)?.classList.add('active');
             document.getElementById('search-bar-container').classList.toggle('hidden', id === 'stats' || id === 'compte' || id === 'bibliotheque' || id === 'liste');
             document.getElementById('add-book-btn')?.classList.toggle('hidden', id !== 'grille');
             if (id === 'compte') openProfile();
-            if ((id === 'stats' || id === 'bibliotheque') && typeof updateBookcaseWidth === 'function') {
-                setTimeout(updateBookcaseWidth, 0);
+            if (id === 'bibliotheque' && !dirtyViews.has(id) && typeof updateBookcaseWidth === 'function') {
+                setTimeout(() => { const bc = document.getElementById('bookcase-container'); if (bc && bc.clientWidth !== lastBookcaseClientWidth) updateBookcaseWidth(); }, 0);
             }
             document.querySelectorAll('#bottom-nav button').forEach(b => b.classList.toggle('active', b.id === 'bn-' + id));
             document.getElementById('fab-add')?.classList.toggle('fab-hide', id !== 'grille');
