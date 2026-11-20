@@ -1888,7 +1888,35 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                 min-width: 0; max-width: 100%;
             }
         }
-    </style>
+    
+/* Grille mobile compacte : trois couvertures par rangée */
+@media (max-width: 767px) {
+ #section-grille #grid-content { grid-template-columns:repeat(3,minmax(0,1fr)); column-gap:10px; row-gap:18px; }
+ #section-grille .grid-item { min-width:0; }
+ #section-grille .grid-thumb { border-radius:8px; margin-bottom:6px; }
+ #section-grille .grid-thumb:hover { transform:none; }
+ #section-grille .grid-item > .flex { gap:2px; font-size:11px; line-height:16px; max-width:100%; }
+ #section-grille .grid-item > .flex .text-base { font-size:11px; line-height:16px; }
+ #section-grille .grid-thumb-title { font-size:clamp(9px,2.8vw,13px); overflow-wrap:anywhere; }
+ #section-grille .grid-thumb-title + span { font-size:8px; overflow-wrap:anywhere; }
+ #section-grille .grid-thumb > span.absolute { width:23px; height:23px; font-size:11px; }
+ #section-grille .grid-thumb > span.absolute.left-10 { left:29px; }
+ #section-grille .grid-select-checkbox { width:19px; height:19px; top:5px; left:5px; }
+ #section-grille .grid-thumb > .absolute.inset-0 svg { width:65%; height:auto; }
+ #section-grille .grid-thumb > .absolute.inset-0 > div { max-width:90%; max-height:70%; }
+}
+
+
+#grid-mobile-filter-toggle { display:none; }
+@media(max-width:767px) {
+ html:has(:is(#section-grille, #section-fiches).active) #grid-search-line { padding-right:49px; }
+ html:has(:is(#section-grille, #section-fiches).active) #grid-mobile-filter-toggle { display:flex; position:absolute; right:0; top:0; bottom:0; width:41px; align-items:center; justify-content:center; border:1px solid color-mix(in srgb,var(--gold-accent) 45%,transparent); border-radius:12px; color:var(--gold-accent); background:color-mix(in srgb,var(--gold-accent) 8%,transparent); }
+ html:has(:is(#section-grille, #section-fiches).active) #grid-mobile-filter-toggle[aria-expanded="true"] { background:var(--gold-accent); color:#1a1a1a; }
+ html:has(:is(#section-grille, #section-fiches).active) #grid-filter-options:not(.mobile-filters-open) { display:none !important; }
+ html:has(:is(#section-grille, #section-fiches).active) #grid-filter-options.mobile-filters-open { padding:10px; border:1px solid color-mix(in srgb,var(--gold-accent) 25%,transparent); border-radius:12px; }
+ html:has(:is(#section-grille, #section-fiches).active) #grid-mobile-filter-toggle:has(+ *) { touch-action:manipulation; }
+}
+</style>
 </head>
 <body>
 
@@ -2271,14 +2299,15 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
 
         <div class="max-w-6xl mx-auto px-6 pt-4">
                 <div id="search-bar-container" class="space-y-3 hidden">
-                    <div class="relative w-full">
+                    <div class="relative w-full" id="grid-search-line">
                         <span class="absolute inset-y-0 left-3 flex items-center text-gray-400">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                         </span>
                         <input type="text" id="search-input" autocomplete="off" data-lpignore="true" data-form-type="other" name="book-search-query" readonly onfocus="this.removeAttribute('readonly')" oninput="render()" data-i18n-placeholder="filters.searchPlaceholder" placeholder="Recherche rapide (titre, auteur, genre...)" class="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-gold-accent transition-all shadow-sm">
+                    <button type="button" id="grid-mobile-filter-toggle" aria-label="Filtres / Filters" aria-expanded="false" aria-controls="grid-filter-options" onclick="var p=document.getElementById('grid-filter-options'); var open=p.classList.toggle('mobile-filters-open'); this.setAttribute('aria-expanded',String(open));"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="8" cy="7" r="2" fill="currentColor"/><circle cx="16" cy="12" r="2" fill="currentColor"/><circle cx="10" cy="17" r="2" fill="currentColor"/></svg></button>
                     </div>
                     
-                    <div class="flex flex-wrap gap-2 items-center text-xs">
+                    <div class="flex flex-wrap gap-2 items-center text-xs" id="grid-filter-options">
                         <span class="text-[10px] font-black uppercase text-slate-400 mr-1 tracking-wider" data-i18n="filters.filterBy">Filtrer par :</span>
                         
                         <select id="filter-year-grid" onchange="render()" class="filter-select !bg-black !text-white font-bold">
