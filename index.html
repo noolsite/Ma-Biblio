@@ -6441,8 +6441,18 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             table.addEventListener('dragend',()=>{draggedColumn=null;});
         }
 
-        window.render = () => {
-            renderBookList();
+        const dirtyViews = new Set();
+        const libraryViews = ['liste','stats','bibliotheque','grille','fiches'];
+        function renderChangedLibrary() {
+            libraryViews.forEach(v => dirtyViews.add(v));
+            const active = document.querySelector('.view-section.active')?.id.replace('section-','');
+            if (libraryViews.includes(active)) render(active);
+        }
+        window.render = (only) => {
+            const start = performance.now();
+            if (!libraryViews.includes(only)) only = null;
+            const wants = v => !only || only === v;
+            if (wants('liste')) renderBookList();
             const searchTerm = document.getElementById('search-input').value.toLowerCase();
             refreshAllMS();
             const rF = getSel('filter-rating'), gF = getSel('filter-genre'), fmtF = getSel('filter-format'), lF = getSel('filter-language'),
@@ -6459,6 +6469,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             const yStatsF = document.getElementById('filter-year-stats').value;
             const isAllYears = yStatsF === 'all';
 
+            if (wants('stats')) {
             if (isAllYears) {
                 document.getElementById('best-book-label-text').innerHTML = `👑 ${t('dash.bestBookAll')}`;
                 document.getElementById('books-read-label').innerHTML = t('dash.booksReadAll');
@@ -6469,6 +6480,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                 document.getElementById('reading-pace-label').innerHTML = `${t('dash.readingPace')} <span class="display-year">${yStatsF}</span>)`;
             }
 
+            }
             const filteredGrid = library.filter(b => {
                 const matchSearch = !searchTerm || (b.title + b.author).toLowerCase().includes(searchTerm);
                 return b.title && matchSearch && passFilters(b);
@@ -6506,6 +6518,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                 filteredFiches.sort(sortFn);
             }
 
+            if (wants('stats')) {
             const statLib = isAllYears
                 ? library.filter(b => b.title && b.end)
                 : library.filter(b => b.title && b.end && b.end.includes(yStatsF));
@@ -6707,15 +6720,17 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             }
 
             updateChart(statLib, isAllYears);
-            renderShelf(getShelfBooks());
+            }
+            if (wants('bibliotheque')) renderShelf(getShelfBooks());
 
             // HTML GRILLE
+            if (wants('grille')) {
             const nextEmptyBook = library.find(b => !b.title);
             document.getElementById('grid-content').innerHTML = filteredGrid.map(b => `
                 <div class="grid-item ${gridSelectMode && selectedGridIds.has(b.id) ? 'grid-item-selected' : ''}" data-id="${b.id}" onclick="${gridSelectMode ? `toggleGridSelection(${b.id})` : `jumpToFiche(${b.id})`}">
                     <div class="grid-thumb relative">
                         ${gridSelectMode ? `<span class="grid-select-checkbox ${selectedGridIds.has(b.id) ? 'checked' : ''}">${selectedGridIds.has(b.id) ? '✓' : ''}</span>` : ''}
-                        ${b.cover ? `<img src="${b.cover}" referrerpolicy="no-referrer" class="w-full h-full object-cover ${b.isDNF ? 'grayscale opacity-50' : (b.isToRead ? 'saturate-[.35] brightness-95' : '')}">` : `<div class="flex flex-col items-center justify-center text-center px-3 py-2 h-full w-full ${b.isDNF ? 'grayscale opacity-50' : (b.isToRead ? 'saturate-[.35] brightness-95' : '')}"><span class="grid-thumb-title font-serif font-black uppercase leading-tight text-[15px]">${b.title}</span><span class="mt-2 text-[10px] font-bold uppercase tracking-wide" style="color: var(--gold-accent);">${b.author || ''}</span></div>`}
+                        ${b.cover ? `<img loading="lazy" decoding="async" src="${b.cover}" referrerpolicy="no-referrer" class="w-full h-full object-cover ${b.isDNF ? 'grayscale opacity-50' : (b.isToRead ? 'saturate-[.35] brightness-95' : '')}">` : `<div class="flex flex-col items-center justify-center text-center px-3 py-2 h-full w-full ${b.isDNF ? 'grayscale opacity-50' : (b.isToRead ? 'saturate-[.35] brightness-95' : '')}"><span class="grid-thumb-title font-serif font-black uppercase leading-tight text-[15px]">${b.title}</span><span class="mt-2 text-[10px] font-bold uppercase tracking-wide" style="color: var(--gold-accent);">${b.author || ''}</span></div>`}
                         ${b.isToRead ? `<div class="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden"><div class="absolute" style="width:150px; height:150px; border-radius:9999px; background: radial-gradient(circle, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 55%, transparent 75%);"></div><svg width="190" height="190" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="position:relative;"><rect x="14" y="6" width="36" height="6" rx="3" fill="var(--gold-accent)" opacity="0.9"/><rect x="14" y="52" width="36" height="6" rx="3" fill="var(--gold-accent)" opacity="0.9"/><path d="M20,12 L44,12 C44,20 38,29 33,32 C38,35 44,44 44,52 L20,52 C20,44 26,35 31,32 C26,29 20,20 20,12 Z" fill="var(--gold-accent)" opacity="0.9"/></svg></div>` : ''}
                         
                         <!-- Badge Favori -->
@@ -6743,7 +6758,9 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             ` : '');
             syncSortableSelection();
 
+            }
             // HTML FICHES
+            if (wants('fiches')) {
             document.getElementById('fiches-content').innerHTML = filteredFiches.length > 0 ? filteredFiches.map(book => `
                 <div id="fiche-scroll-${book.id}" data-fiche-id="${book.id}" class="fiche-container ${gridSelectMode ? 'fiche-select-mode' : ''} ${gridSelectMode && selectedGridIds.has(book.id) ? 'fiche-selected' : ''}">
                     ${gridSelectMode ? `<button type="button" class="fiche-check ${selectedGridIds.has(book.id) ? 'checked' : ''}" aria-label="Sélectionner le livre" aria-pressed="${selectedGridIds.has(book.id)}">${selectedGridIds.has(book.id) ? '✓' : ''}</button>` : ''}
@@ -6774,7 +6791,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                     </div>
                     <div class="flex flex-col md:flex-row gap-10">
                         <div class="cover-box shrink-0">
-                            ${book.cover ? `<img src="${book.cover}" referrerpolicy="no-referrer" class="w-full h-full object-cover ${book.isDNF ? 'grayscale opacity-50' : (book.isToRead ? 'saturate-[.35] brightness-95' : '')}">` : `<span class="text-slate-100 font-black text-6xl">?</span>`}
+                            ${book.cover ? `<img loading="lazy" decoding="async" src="${book.cover}" referrerpolicy="no-referrer" class="w-full h-full object-cover ${book.isDNF ? 'grayscale opacity-50' : (book.isToRead ? 'saturate-[.35] brightness-95' : '')}">` : `<span class="text-slate-100 font-black text-6xl">?</span>`}
                         </div>
                         <div class="flex-1">
                             <div class="relative mb-6">
@@ -6816,6 +6833,9 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                     <button onclick="addNewBookFromLibrary()" class="px-5 py-2.5 rounded-full bg-black text-white text-[10px] font-black uppercase tracking-widest hover:bg-[var(--gold-accent)] transition-colors">${t('filters.emptyFichesBtn')}</button>
                 </div>
             `;
+            }
+            if (only) dirtyViews.delete(only); else dirtyViews.clear();
+            console.debug('Nool rendu', only || 'all', Math.round(performance.now()-start), 'ms');
             updateScrollNavButtons();
         };
 
@@ -7187,7 +7207,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             if (newPages) { delete library[idx].pagesTried; delete library[idx].pagesLookup; }
             void syncLibraryWrite().catch(()=>{});
             if (reflowed) { await saveShelfPositions(); await saveShelfDecorations(); }
-            updateFilterOptions(); render(); closeModal();
+            closeModal(); updateFilterOptions(); renderChangedLibrary();
         };
 
         window.showSection = (id, forceScrollTop = false) => {
@@ -7196,6 +7216,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('section-' + id).classList.add('active');
+            if (dirtyViews.has(id)) render(id);
             document.getElementById('btn-' + id)?.classList.add('active');
             document.getElementById('search-bar-container').classList.toggle('hidden', id === 'stats' || id === 'compte' || id === 'bibliotheque' || id === 'liste');
             document.getElementById('add-book-btn')?.classList.toggle('hidden', id !== 'grille');
@@ -8419,18 +8440,19 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             updateGridSelectUI();
             void syncLibraryWrite().catch(()=>{});
             updateFilterOptions();
-            render();
+            renderChangedLibrary();
         };
 
         window.deleteBook = async (id) => {
             if (!confirm(t("msg.deleteConfirm"))) return;
             const idx = library.findIndex(b => b.id === id);
+            if (idx < 0) return;
             library.splice(idx, 1);
             library.push({ id: 100, title: "", author: "", cover: "", rating: 0, summary: "", end: "", genre: "", format: "-", lang: "", start: "", comment: "", isFavorite: false, isAllTimeFavorite: false, isDNF: false, isToRead: false, isMyFavorite: false });
             library.forEach((b, i) => b.id = i + 1);
             void syncLibraryWrite().catch(()=>{});
             updateFilterOptions();
-            render();
+            renderChangedLibrary();
         };
     </script>
 <div id="deco-size-panel" hidden role="dialog" aria-label="Taille de la décoration">
