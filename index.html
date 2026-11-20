@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool</title>
+    <title>Nool — TEST Firebase</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -2939,7 +2939,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, runTransaction, deleteDoc, getDocFromServer, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, runTransaction, deleteDoc, getDocFromServer, writeBatch, collection, getDocsFromServer } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyALZ0tu1jU2OJbGrAmCcAFXVFB5os4-pfY",
@@ -3315,7 +3315,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                 await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
                 await signInWithPopup(auth, googleProvider);
             }
-            catch (err) { alert(err.message); }
+            catch (err) { await testDialog("Connexion Google : "+(err.code||"")+" "+err.message,false); }
         };
 
         // --- MOT DE PASSE OUBLIÉ ---
@@ -6006,11 +6006,11 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
         }
         async function readNoolBackup(uid) {
             if(hasUnsavedLibrary())throw new Error("Pending library sync");
-            const [books,profile]=await Promise.all([getDocFromServer(doc(db,'users_libs',uid)),getDocFromServer(doc(db,'user_profiles',uid))]);
-            if(auth.currentUser?.uid!==uid || !books.exists() || !Array.isArray(books.data().books)) throw new Error('Library unavailable');
+            const [books,profile]=await Promise.all([readTestBooks(uid),getDocFromServer(doc(db,'user_profiles',uid))]);
+            if(auth.currentUser?.uid!==uid || !books.marker) throw new Error('Library unavailable');
             const preferences={};
             for(const k of noolBackupKeys) {const v=localStorage.getItem(k);if(v!==null) preferences[k]=v;}
-            return {format:'nool-backup',version:1,createdAt:new Date().toISOString(),books:books.data().books,profile:profile.data()||{},preferences};
+            return {format:'nool-backup',version:1,createdAt:new Date().toISOString(),books:testArray(books.map),profile:profile.data()||{},preferences};
         }
         function downloadNoolBackup(data,prefix='Nool-sauvegarde') {
             const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
@@ -6040,13 +6040,28 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                 if(auth.currentUser?.uid!==uid)throw new Error('Account changed');
                 const profile={...before.profile};
                 for(const k of noolBackupProfileKeys){delete profile[k];if(Object.prototype.hasOwnProperty.call(data.profile,k))profile[k]=data.profile[k];}
-                const batch=writeBatch(db);batch.set(doc(db,'users_libs',uid),{books:data.books},{merge:true});batch.set(doc(db,'user_profiles',uid),profile);await batch.commit();
+                await commitTestBooks(uid,JSON.parse(JSON.stringify(data.books)),profile);
                 try{for(const k of noolBackupKeys){const v=data.preferences?.[k];if(typeof v==='string')localStorage.setItem(k,v);}}catch(e){console.warn(e);}
                 alert(backupText('Restauration terminée. Nool va se recharger.','Restore complete. Nool will reload.'));location.reload();
             }catch(e){console.error(e);backupStatus(backupText('Restauration impossible : fichier invalide ou erreur Firebase.','Restore failed: invalid file or Firebase error.'),true);}
             finally{backupBusy(false);}
         };
 
+        function testDialog(message, confirmation = true) {
+            return new Promise(resolve => {
+                const panel = document.createElement('div');
+                panel.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:20px';
+                const card = document.createElement('div');
+                card.style.cssText = 'background:#faf9f6;color:#222;padding:24px;border-radius:16px;max-width:460px;width:100%;box-shadow:0 12px 40px #0004';
+                const title = document.createElement('h2'); title.textContent = 'Nool'; title.style.cssText='font-size:22px;margin-bottom:14px';
+                const text = document.createElement('p'); text.textContent=message; text.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;margin-bottom:20px';
+                card.append(title,text);
+                const addButton = (label,value) => {const b=document.createElement('button');b.type='button';b.textContent=label;b.style.cssText='padding:10px 16px;margin:4px;border:1px solid #c5a059;border-radius:8px;background:#fff;color:#222';b.onclick=()=>{panel.remove();resolve(value);};card.append(b);};
+                if(confirmation)addButton('Annuler',false);
+                addButton(confirmation?'Continuer':'Fermer',true);
+                panel.append(card);document.body.append(panel);
+            });
+        }
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
@@ -6125,10 +6140,12 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                 document.getElementById('auth-form').reset();
                 document.getElementById('landing-page').classList.add('hidden');
                 document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('app-content').classList.remove('hidden');
+                document.getElementById('app-content').classList.add('hidden');
                 setTimeout(() => document.getElementById('app-content').classList.add('opacity-100'), 50);
                 showSection('bibliotheque', true);
                 await loadUserLibrary();
+                if(auth.currentUser?.uid!==user.uid)return;
+                document.getElementById('app-content').classList.remove('hidden');
                 if (!hasSeenTutorial) {
                     openTutorial(true);
                 } else if (!currentPseudo) {
@@ -6172,44 +6189,88 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             el.textContent=st?.pending?backupText('Synchronisation…','Syncing…'):backupText('Échec de sauvegarde — Réessayer','Save failed — Retry');
             el.disabled=!!st?.pending;
         }
+        const testMarker = '__nool_test_v1';
+        const testBookRef = (uid,key) => doc(db,'users_libs',uid,'books',key);
+        const testBookCollection = uid => collection(db,'users_libs',uid,'books');
+        const testBaselines = new Map();
+        const testQueues = new Map();
+        function canonical(value) {
+            if(Array.isArray(value)) return '['+value.map(canonical).join(',')+']';
+            if(value && typeof value==='object') return '{'+Object.keys(value).sort().map(k=>JSON.stringify(k)+':'+canonical(value[k])).join(',')+'}';
+            return JSON.stringify(value);
+        }
+        function testMap(books) {
+            const result=new Map();
+            for(const b of books) {
+                // Les cases vides standard sont reconstruites localement.
+                if(!b.title && !b.uid && !b.author && !b.cover && !b.comment && !b.summary && !b.rating && !b.isFavorite && !b.isToRead && !b.isMyFavorite && !b.isAllTimeFavorite && !b.isDNF && !b.isBookClub && !b.genre && !b.start && !b.end && !b.pages && !b.saga && !b.year && !b.lang && (!b.format || b.format==='-') && !Object.keys(b).some(k=>k.startsWith('shelf'))) continue;
+                const key=b.uid || (b.uid=generateUid());
+                if(key===testMarker || key.includes('/') || result.has(key)) throw new Error('Invalid or duplicate book UID');
+                result.set(key,b);
+            }
+            return result;
+        }
+        async function readTestBooks(uid) {
+            const snap=await getDocsFromServer(testBookCollection(uid));
+            const marker=snap.docs.find(d=>d.id===testMarker);
+            const map=new Map(snap.docs.filter(d=>d.id!==testMarker).map(d=>[d.id,d.data()]));
+            return {marker,map};
+        }
+        function testArray(map) {return [...map.values()].sort((a,b)=>a.id-b.id);}
+        async function commitTestBooks(uid,books,profile=null) {
+            if(auth.currentUser?.uid!==uid || !testBaselines.has(uid)) throw new Error('Bibliothèque non chargée');
+            const before=testBaselines.get(uid), next=testMap(books), batch=writeBatch(db);let count=0;
+            for(const [key,b] of next) if(!before.has(key)||canonical(before.get(key))!==canonical(b)){batch.set(testBookRef(uid,key),b);count++;}
+            for(const key of before.keys()) if(!next.has(key)){batch.delete(testBookRef(uid,key));count++;}
+            if(profile!==null){batch.set(doc(db,'user_profiles',uid),profile);count++;}
+            if(count>450)throw new Error('Limite de 450 opérations par enregistrement dépassée');
+            if(count)await batch.commit();
+            testBaselines.set(uid,next);
+        }
         function syncLibraryWrite() {
             const uid=currentUser?.uid;
-            if(!uid||auth.currentUser?.uid!==uid)return Promise.reject(new Error('Account changed'));
+            if(!uid||auth.currentUser?.uid!==uid||!testBaselines.has(uid))return Promise.reject(new Error('Bibliothèque non chargée'));
             const st=syncState(uid), seq=++st.seq;
             const snapshot=JSON.parse(JSON.stringify(library));
             st.pending++;paintLibrarySync();
-            return Promise.resolve().then(()=>setDoc(doc(db,'users_libs',uid),{books:snapshot})).then(()=>{if(seq===st.seq)st.error=false;},err=>{if(seq===st.seq)st.error=true;console.error('Nool sync',err);throw err;}).finally(()=>{st.pending--;paintLibrarySync();});
+            const job=(testQueues.get(uid)||Promise.resolve()).catch(()=>{}).then(()=>commitTestBooks(uid,snapshot));
+            testQueues.set(uid,job);
+            return job.then(()=>{if(seq===st.seq)st.error=false;},err=>{if(seq===st.seq)st.error=true;console.error('Nool sync',err);throw err;}).finally(()=>{st.pending--;paintLibrarySync();});
         }
         function hasUnsavedLibrary(){const st=librarySyncStates.get(auth.currentUser?.uid);return !!(st&&(st.pending||st.error));}
         window.addEventListener('beforeunload',e=>{if(hasUnsavedLibrary()){e.preventDefault();e.returnValue='';}});
 
         async function loadUserLibrary() {
-            const docRef = doc(db, "users_libs", currentUser.uid);
-            const docSnap = await getDoc(docRef);
-            let needsSave = false;
-            if (docSnap.exists()) {
-                library = docSnap.data().books;
-                if (library.length < MAX_BOOKS) {
-                    while (library.length < MAX_BOOKS) {
-                        library.push({ id: library.length + 1, title: "", author: "", cover: "", rating: 0, summary: "", end: "", genre: "", format: "-", lang: "", start: "", comment: "", isFavorite: false, isAllTimeFavorite: false, isDNF: false, isToRead: false, isMyFavorite: false });
-                    }
-                    needsSave = true;
+            const uid=currentUser.uid;
+            const empty=id=>({id,title:"",author:"",cover:"",rating:0,summary:"",end:"",genre:"",format:"-",lang:"",start:"",comment:"",isFavorite:false,isAllTimeFavorite:false,isDNF:false,isToRead:false,isMyFavorite:false});
+            try {
+                let {marker,map}=await readTestBooks(uid);
+                if(!marker) {
+                    if(map.size)throw new Error('Documents existants sans marqueur de migration');
+                    const old=await getDocFromServer(doc(db,'users_libs',uid));
+                    const original=old.exists()?old.data().books:[];
+                    if(!Array.isArray(original))throw new Error('Invalid legacy library');
+                    const next=testMap(JSON.parse(JSON.stringify(original)));
+                    if(next.size>450)throw new Error('Migration : limite de 450 livres dépassée');
+                    const batch=writeBatch(db);
+                    for(const [key,b] of next)batch.set(testBookRef(uid,key),b);
+                    batch.set(testBookRef(uid,testMarker),{version:1,initialCount:next.size});
+                    await batch.commit();
+                    const verified=await readTestBooks(uid);
+                    if(!verified.marker||verified.map.size!==next.size||[...next].some(([k,v])=>canonical(v)!==canonical(verified.map.get(k))))throw new Error('Migration verification failed');
+                    map=verified.map;
                 }
-            } else {
-                library = Array.from({length: MAX_BOOKS}, (_, i) => ({ id: i + 1, title: "", author: "", cover: "", rating: 0, summary: "", end: "", genre: "", format: "-", lang: "", start: "", comment: "", isFavorite: false, isAllTimeFavorite: false, isDNF: false, isToRead: false, isMyFavorite: false }));
-                needsSave = true;
-            }
-            // Identifiant stable par livre : ne change jamais, même quand l'ordre
-            // dans la Grille (et donc le champ id) est modifié. Sert de clé pour
-            // la position sur l'étagère afin qu'elle ne bouge pas avec le tri.
-            library.forEach(b => {
-                if (b.title && !b.uid) { b.uid = generateUid(); needsSave = true; }
-            });
-            if (migrateSagas()) needsSave = true;
-            if (needsSave) await setDoc(docRef, { books: library });
+                if(auth.currentUser?.uid!==uid)throw new Error('Account changed');
+                testBaselines.set(uid,map);
+                library=testArray(map).map(b=>JSON.parse(JSON.stringify(b)));
+                const slots=new Map(library.map(b=>[b.id,b]));
+                const length=Math.max(MAX_BOOKS,...slots.keys());
+                library=Array.from({length},(_,i)=>slots.get(i+1)||empty(i+1));
+                if(migrateSagas())await syncLibraryWrite();
+            } catch(e) {console.error(e);await signOut(auth);await testDialog('Chargement ou migration impossible. Aucun livre ancien supprimé.\nErreur : '+(e.code||'')+' '+e.message,false);return;}
             updateFilterOptions();
             render();
-            setTimeout(backfillPages, 4000);
+            // Recherche automatique suspendue pour préserver la synchronisation.
         }
 
         // Cherche en arrière-plan le nombre de pages des livres qui n'en ont pas (au plus 60 par session,
