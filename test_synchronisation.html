@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — Test synchronisation</title>
+    <title>Nool — TEST V4 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -6044,10 +6044,25 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                 const fresh=await readTestBooks(uid);
                 const baseline=testBaselines.get(uid);
                 if(!baseline||fresh.map.size!==baseline.size||[...fresh.map].some(([k,v])=>canonical(v)!==canonical(baseline.get(k))))throw new Error('Bibliothèque modifiée ailleurs : actualise avant de restaurer');
-                await commitTestBooks(uid,JSON.parse(JSON.stringify(data.books)),profile);
+                const expected=testMap(JSON.parse(JSON.stringify(data.books)));
+                const overlay=document.createElement('div');
+                overlay.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#222e;color:white;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px';
+                overlay.setAttribute('role','status'); overlay.setAttribute('aria-live','polite');
+                document.body.append(overlay);
+                const guard=e=>{e.preventDefault();e.returnValue='';};
+                window.addEventListener('beforeunload',guard);
+                try {
+                    await commitTestBooks(uid,JSON.parse(JSON.stringify(data.books)),profile,(done,total)=>{
+                        const msg=backupText(`Restauration : ${done} / ${total} opérations. Ne ferme pas Nool.`,`Restoring: ${done} / ${total} operations. Do not close Nool.`);
+                        overlay.textContent=msg;backupStatus(msg);
+                    },before.profile);
+                    overlay.textContent=backupText('Vérification des livres…','Checking books…');
+                    const verified=await readTestBooks(uid);
+                    if(verified.map.size!==expected.size||[...expected].some(([k,v])=>canonical(v)!==canonical(verified.map.get(k))))throw new Error('Vérification finale : données différentes du fichier');
+                } finally {overlay.remove();window.removeEventListener('beforeunload',guard);}
                 try{for(const k of noolBackupKeys){const v=data.preferences?.[k];if(typeof v==='string')localStorage.setItem(k,v);}}catch(e){console.warn(e);}
                 alert(backupText('Restauration terminée. Nool va se recharger.','Restore complete. Nool will reload.'));location.reload();
-            }catch(e){console.error(e);backupStatus(backupText('Restauration impossible : fichier invalide ou erreur Firebase.','Restore failed: invalid file or Firebase error.'),true);}
+            }catch(e){console.error(e);backupStatus(backupText('Restauration interrompue. Des lots peuvent déjà être enregistrés. Actualise avant toute nouvelle tentative. Erreur : ','Restore interrupted. Some batches may have been saved. Reload before retrying. Error: ')+(e.code||'')+' '+e.message,true);}
             finally{backupBusy(false);}
         };
 
@@ -6243,7 +6258,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             });
         }
         // Transactions par petits lots : ne jamais écraser un livre modifié ailleurs.
-        async function commitTestBooks(uid,books,profile=null) {
+        async function commitTestBooks(uid,books,profile=null,progress=null,originalProfile=null) {
             if(auth.currentUser?.uid!==uid || !testBaselines.has(uid)) throw new Error('Bibliothèque non chargée');
             const before=testBaselines.get(uid), local=testLocalBaselines.get(uid), next=testMap(books), ops=[];
             if(!local) throw new Error('Bibliothèque non chargée');
@@ -6256,14 +6271,14 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                 if(canonical(before.get(key))!==canonical(stored)) ops.push({key,value:stored,localValue:value});
             }
             for(const key of local.keys()) if(!next.has(key)) ops.push({key,value:null});
-            // Une restauration reste atomique tant que le protocole de reprise n'est pas validé.
-            if(profile!==null && ops.length>100) throw new Error('Restauration volumineuse : utiliser la version actuelle ou attendre la validation du nouveau protocole');
+            // Restaurer les nouveaux livres avant de supprimer les anciens.
+            if(profile!==null)ops.sort((a,b)=>Number(a.value===null)-Number(b.value===null));
             const batches=[];
             for(let i=0;i<ops.length;i+=100)batches.push(ops.slice(i,i+100));
-            if(profile!==null&&!batches.length)batches.push([]);
+            let done=0; if(progress)progress(done,ops.length);
             for(const group of batches){
                 if(auth.currentUser?.uid!==uid)throw new Error('Compte modifié');
-                await runTransaction(db,async tx=>{
+                await retryRestore(()=>runTransaction(db,async tx=>{
                     const refs=group.map(o=>testBookRef(uid,o.key));
                     const snaps=await Promise.all(refs.map(r=>tx.get(r)));
                     for(let i=0;i<group.length;i++){
@@ -6275,10 +6290,26 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                     for(let i=0;i<group.length;i++){
                         const o=group[i];if(o.value===null)tx.delete(refs[i]);else tx.set(refs[i],o.value);
                     }
-                    if(profile!==null)tx.set(doc(db,'user_profiles',uid),profile);
-                });
+                }),profile!==null);
                 // Avancer uniquement après confirmation du serveur ; un nouvel essai reprend les opérations restantes.
                 for(const o of group){if(o.value===null){before.delete(o.key);local.delete(o.key);}else{before.set(o.key,o.value);local.set(o.key,o.localValue);}}
+                done+=group.length;if(progress)progress(done,ops.length);
+            }
+            if(profile!==null) {
+                const ref=doc(db,'user_profiles',uid);
+                await retryRestore(()=>runTransaction(db,async tx=>{
+                    const snap=await tx.get(ref), remote=snap.data()||{};
+                    if(canonical(remote)!==canonical(originalProfile)&&canonical(remote)!==canonical(profile))throw new Error('Conflit : paramètres modifiés ailleurs');
+                    tx.set(ref,profile);
+                }),true);
+            }
+        }
+        async function retryRestore(action,enabled){
+            for(let attempt=0;;attempt++){
+                try{return await action();}catch(e){
+                    if(!enabled||attempt>=3||!['unavailable','deadline-exceeded','aborted'].includes(e.code))throw e;
+                    await new Promise(resolve=>setTimeout(resolve,2000*(attempt+1)));
+                }
             }
         }
         function syncLibraryWrite() {
@@ -6291,6 +6322,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             testQueues.set(uid,job);
             return job.then(()=>{if(seq===st.seq)st.error=false;},err=>{if(seq===st.seq){st.error=true;st.message=err.message;}console.error('Nool sync',err);throw err;}).finally(()=>{st.pending--;paintLibrarySync();});
         }
+        window.addEventListener('online',()=>{const st=librarySyncStates.get(auth.currentUser?.uid);if(st?.error&&!st.pending&&!noolBackupBusy&&!st.message?.startsWith('Conflit'))void syncLibraryWrite().catch(()=>{});});
         function hasUnsavedLibrary(){const st=librarySyncStates.get(auth.currentUser?.uid);return !!(st&&(st.pending||st.error));}
         window.addEventListener('beforeunload',e=>{if(hasUnsavedLibrary()){e.preventDefault();e.returnValue='';}});
 
