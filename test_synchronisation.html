@@ -6229,7 +6229,18 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             const map=new Map(snap.docs.filter(d=>d.id!==testMarker).map(d=>[d.id,d.data()]));
             return {marker,map};
         }
-        function testArray(map) {return [...map.values()].sort((a,b)=>a.id-b.id);}
+        function testArray(map) {
+            // Deux appareils peuvent attribuer la même position à deux UID distincts.
+            // Conserver chaque document, puis réserver une position unique sans écraser les autres.
+            const sorted=[...map.entries()].sort((a,b)=>a[1].id-b[1].id || a[0].localeCompare(b[0]));
+            let previous=0;
+            return sorted.map(([key,book])=>{
+                const preferred=Number.isSafeInteger(book.id)&&book.id>0?book.id:1;
+                const id=Math.max(preferred,previous+1);
+                previous=id;
+                return {...book,uid:key,id};
+            });
+        }
         // Transactions par petits lots : ne jamais écraser un livre modifié ailleurs.
         async function commitTestBooks(uid,books,profile=null) {
             if(auth.currentUser?.uid!==uid || !testBaselines.has(uid)) throw new Error('Bibliothèque non chargée');
