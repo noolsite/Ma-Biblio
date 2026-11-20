@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V5 — Test synchronisation</title>
+    <title>Nool — TEST V7 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -249,6 +249,9 @@
         }
 
         /* --- STYLE GRILLE --- */
+        @supports (content-visibility: auto) {
+            #grid-content .grid-item { content-visibility: auto; contain-intrinsic-size: auto 230px; }
+        }
         .grid-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; position: relative; }
         .grid-thumb {
             width: 100%; aspect-ratio: 2/3; background: white;
@@ -6510,26 +6513,28 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             const activeCount = Object.values(filters).filter(Boolean).length;
             const filterBadge = document.getElementById('book-list-active-filters');
             if (filterBadge) filterBadge.textContent = activeCount ? `(${activeCount})` : '';
+            const listValues = new Map();
+            const collator = new Intl.Collator('fr', {numeric:true,sensitivity:'base'});
             let rows = (library || []).filter(b => b && b.title).filter(b => {
                 const values = getBookListValues(b);
+                listValues.set(b, values);
                 return Object.entries(filters).every(([key,q]) => !q || (key==='status' ? String(values[key]).toLocaleLowerCase('fr')===q : String(values[key]).toLocaleLowerCase('fr').includes(q)));
             });
-            rows.sort((a,b) => {
-                if (bookListSort.key==='manual') return library.indexOf(a)-library.indexOf(b);
-                const av=getBookListValues(a)[bookListSort.key], bv=getBookListValues(b)[bookListSort.key];
+            if (bookListSort.key !== 'manual') rows.sort((a,b) => {
+                const av=listValues.get(a)[bookListSort.key], bv=listValues.get(b)[bookListSort.key];
                 const an=Number(av), bn=Number(bv);
                 const numeric = av!=='' && bv!=='' && Number.isFinite(an) && Number.isFinite(bn);
-                const cmp = numeric ? an-bn : String(av).localeCompare(String(bv),'fr',{numeric:true,sensitivity:'base'});
+                const cmp = numeric ? an-bn : collator.compare(String(av), String(bv));
                 return cmp * bookListSort.direction;
             });
             body.innerHTML = rows.length ? rows.map(b => {
-                const v=getBookListValues(b), id=esc(b.id);
+                const v=listValues.get(b), id=esc(b.id);
                 const cells = order.map(key => {
                     let value = v[key] === '' ? '—' : v[key];
                     const content = key==='status' ? `<span class="list-chip list-status ${b.isDNF?'status-dnf':b.isToRead?'status-toread':'status-read'}">${esc(value)}</span>` : value !== '—' && key === 'genre' ? bookGenres(value).map(g => `<span class="list-chip">${esc(g)}</span>`).join(' ') : value !== '—' && ['lang','format'].includes(key) ? `<span class="list-chip">${esc(value)}</span>` : key==='rating' && value!=='—' ? `<span class="list-rating">${esc(value)}<span class="list-rating-star" aria-hidden="true">★</span></span>` : esc(value);
                     return `<td data-col="${key}" class="${key==='title'?'book-name':''}">${content}</td>`;
                 }).join('');
-                return `<tr data-book-row data-book-id="${id}" draggable="false" class="${selectedBookIds.has(String(b.id))?'book-list-selected':''}" onclick="if(event.target.closest('input'))return; if(event.ctrlKey||event.metaKey){toggleBookListSelection('${id}',!selectedBookIds.has('${id}'));lastSelectedBookId='${id}';return;} if(event.shiftKey&&lastSelectedBookId){selectBookListRange(lastSelectedBookId,'${id}');return;} showSection('fiches', true); setTimeout(()=>document.getElementById('fiche-scroll-${Number(b.id)}')?.scrollIntoView({behavior:'smooth',block:'start'}),80)" style="cursor:grab">${cells}</tr>`;
+                return `<tr data-book-row data-book-id="${id}" draggable="false" class="${selectedBookIds.has(String(b.id))?'book-list-selected':''}" onclick="if(event.target.closest('input'))return; if(event.ctrlKey||event.metaKey){toggleBookListSelection('${id}',!selectedBookIds.has('${id}'));lastSelectedBookId='${id}';return;} if(event.shiftKey&&lastSelectedBookId){selectBookListRange(lastSelectedBookId,'${id}');return;} jumpToFiche(${Number(b.id)})" style="cursor:grab">${cells}</tr>`;
             }).join('') : '<tr><td colspan="10" class="text-center py-10 text-slate-400">Aucun livre ne correspond aux filtres.</td></tr>';
             const count = document.getElementById('book-list-count');
             if (count) count.textContent = `${rows.length} livre${rows.length > 1 ? 's' : ''}`;
@@ -6639,6 +6644,19 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
         }
 
         const dirtyViews = new Set();
+        const fichePageSize = 20;
+        let fichePage = 0, ficheFilteredIds = [], ficheJumpTarget = null;
+        window.changeFichePage = (delta) => {
+            fichePage = Math.max(0, fichePage + delta);
+            render('fiches');
+            window.scrollTo({top: 0, behavior: 'instant'});
+        };
+        function fichePager(total) {
+            if (total <= fichePageSize) return '';
+            const pages = Math.ceil(total / fichePageSize);
+            const en = document.documentElement.lang === 'en';
+            return `<nav aria-label="Pagination" style="display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;padding:12px;color:var(--gold-accent)"><button type="button" onclick="changeFichePage(-1)" ${fichePage===0?'disabled style="opacity:.35"':''}>← ${en?'Previous':'Précédent'}</button><span> ${fichePage+1} / ${pages} · ${total} ${en?'books':'livres'}</span><button type="button" onclick="changeFichePage(1)" ${fichePage>=pages-1?'disabled style="opacity:.35"':''}>${en?'Next':'Suivant'} →</button></nav>`;
+        }
         const libraryViews = ['liste','stats','bibliotheque','grille','fiches'];
         function renderChangedLibrary() {
             libraryViews.forEach(v => dirtyViews.add(v));
@@ -6647,7 +6665,11 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
         }
         window.render = (only) => {
             const start = performance.now();
-            if (!libraryViews.includes(only)) only = null;
+            if (!libraryViews.includes(only)) {
+                libraryViews.forEach(v => dirtyViews.add(v));
+                only = document.querySelector('.view-section.active')?.id.replace('section-','');
+                if (!libraryViews.includes(only)) { refreshAllMS(); return; }
+            }
             const wants = v => !only || only === v;
             if (wants('liste')) renderBookList();
             const searchTerm = document.getElementById('search-input').value.toLowerCase();
@@ -6678,20 +6700,15 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             }
 
             }
-            const filteredGrid = library.filter(b => {
+            // Grille et fiches partagent les mêmes filtres; ne pas trier pour les autres vues.
+            const filteredGrid = (wants('grille') || wants('fiches')) ? library.filter(b => {
                 const matchSearch = !searchTerm || (b.title + b.author).toLowerCase().includes(searchTerm);
                 return b.title && matchSearch && passFilters(b);
-            });
-
-            const filteredFiches = library.filter(b => {
-                if (!b.title) return false;
-                const matchSearch = !searchTerm || (b.title + b.author).toLowerCase().includes(searchTerm);
-                return matchSearch && passFilters(b);
-            });
+            }) : [];
+            const filteredFiches = filteredGrid;
 
             if (sortF === 'saga') {
                 filteredGrid.splice(0, filteredGrid.length, ...sortBySaga(filteredGrid));
-                filteredFiches.splice(0, filteredFiches.length, ...sortBySaga(filteredFiches));
             } else if (sortF !== 'none') {
                 const parseDMY = (s) => {
                     if (!s) return null;
@@ -6712,7 +6729,6 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                 };
                 const sortFn = (sortF === 'rating-asc' || sortF === 'rating-desc') ? sortByRating : sortByDate;
                 filteredGrid.sort(sortFn);
-                filteredFiches.sort(sortFn);
             }
 
             if (wants('stats')) {
@@ -6958,7 +6974,14 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             }
             // HTML FICHES
             if (wants('fiches')) {
-            document.getElementById('fiches-content').innerHTML = filteredFiches.length > 0 ? filteredFiches.map(book => `
+            ficheFilteredIds = filteredFiches.map(book => book.id);
+            if (ficheJumpTarget !== null) {
+                const index = ficheFilteredIds.indexOf(ficheJumpTarget);
+                if (index >= 0) fichePage = Math.floor(index / fichePageSize);
+                ficheJumpTarget = null;
+            }
+            fichePage = Math.min(fichePage, Math.max(0, Math.ceil(filteredFiches.length / fichePageSize)-1));
+            document.getElementById('fiches-content').innerHTML = filteredFiches.length > 0 ? fichePager(filteredFiches.length) + filteredFiches.slice(fichePage * fichePageSize, (fichePage+1)*fichePageSize).map(book => `
                 <div id="fiche-scroll-${book.id}" data-fiche-id="${book.id}" class="fiche-container ${gridSelectMode ? 'fiche-select-mode' : ''} ${gridSelectMode && selectedGridIds.has(book.id) ? 'fiche-selected' : ''}">
                     ${gridSelectMode ? `<button type="button" class="fiche-check ${selectedGridIds.has(book.id) ? 'checked' : ''}" aria-label="Sélectionner le livre" aria-pressed="${selectedGridIds.has(book.id)}">${selectedGridIds.has(book.id) ? '✓' : ''}</button>` : ''}
                     <div class="flex items-center justify-between gap-4 mb-6 flex-wrap">
@@ -7022,7 +7045,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                         <button onclick="openEdit(${book.id})" class="px-5 py-2 rounded-lg bg-slate-50 text-slate-400 font-bold uppercase text-[10px] tracking-widest hover:text-yellow-600 transition-colors">Modifier</button>
                     </div>
                 </div>
-            `).join('') : `
+            `).join('') + fichePager(filteredFiches.length) : `
                 <div class="fiche-container flex flex-col items-center justify-center text-center py-20" style="border: 2px dashed #e5e0d5; background: transparent; box-shadow: none;">
                     <span class="text-4xl mb-4" style="opacity: .5;">📖</span>
                     <h3 class="font-serif text-lg font-black uppercase tracking-tight mb-2">${t('filters.emptyFichesTitle')}</h3>
@@ -7057,7 +7080,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             targetBook.isFavorite = !currentState;
 
             void syncLibraryWrite().catch(()=>{});
-            render();
+            renderChangedLibrary();
         };
 
         window.toggleAllTimeFavorite = async (id) => {
@@ -7071,7 +7094,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             targetBook.isAllTimeFavorite = !currentState;
 
             void syncLibraryWrite().catch(()=>{});
-            render();
+            renderChangedLibrary();
         };
 
         window.toggleMyFavorite = async (id) => {
@@ -7079,7 +7102,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             if (!targetBook) return;
             targetBook.isMyFavorite = !targetBook.isMyFavorite;
             void syncLibraryWrite().catch(()=>{});
-            render();
+            renderChangedLibrary();
         };
 
         window.toggleBookClub = async (id) => {
@@ -7087,7 +7110,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             if (!targetBook) return;
             targetBook.isBookClub = !targetBook.isBookClub;
             void syncLibraryWrite().catch(()=>{});
-            render();
+            renderChangedLibrary();
         };
 
         function hexToRgba(hex, alpha) {
@@ -7413,7 +7436,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('section-' + id).classList.add('active');
-            if (dirtyViews.has(id) && id !== 'bibliotheque') render(id);
+            if (id === 'fiches' && ficheJumpTarget !== null && dirtyViews.has(id)) render(id);
             document.getElementById('btn-' + id)?.classList.add('active');
             document.getElementById('search-bar-container').classList.toggle('hidden', id === 'stats' || id === 'compte' || id === 'bibliotheque' || id === 'liste');
             document.getElementById('add-book-btn')?.classList.toggle('hidden', id !== 'grille');
@@ -7424,9 +7447,9 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             document.querySelectorAll('#bottom-nav button').forEach(b => b.classList.toggle('active', b.id === 'bn-' + id));
             document.getElementById('fab-add')?.classList.toggle('fab-hide', id !== 'grille');
             setTimeout(updateScrollNavButtons, 0);
-            if (id === 'bibliotheque' && dirtyViews.has(id)) {
+            if (libraryViews.includes(id) && dirtyViews.has(id)) {
                 requestAnimationFrame(() => requestAnimationFrame(() => {
-                    if (document.getElementById('section-bibliotheque').classList.contains('active') && dirtyViews.has(id)) render(id);
+                    if (document.getElementById('section-' + id)?.classList.contains('active') && dirtyViews.has(id)) render(id);
                 }));
             }
         };
@@ -7515,7 +7538,10 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
 
         window.jumpToFiche = (id) => { 
             const b = library.find(x => x.id === id);
+            if(!b) return;
             if(!b.title) return openEdit(id);
+            ficheJumpTarget = id;
+            dirtyViews.add('fiches');
             showSection('fiches'); 
             setTimeout(() => {
                 const el = document.getElementById('fiche-scroll-' + id);
@@ -8582,30 +8608,32 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             gridSelectMode = !gridSelectMode;
             if (!gridSelectMode) selectedGridIds.clear();
             updateGridSelectUI();
-            render();
+            renderChangedLibrary();
         };
 
         window.cancelGridSelectMode = () => {
             gridSelectMode = false;
             selectedGridIds.clear();
             updateGridSelectUI();
-            render();
+            renderChangedLibrary();
         };
 
         window.toggleGridSelection = (id) => {
             if (selectedGridIds.has(id)) selectedGridIds.delete(id);
             else selectedGridIds.add(id);
             updateGridSelectUI();
-            render();
+            renderChangedLibrary();
         };
 
         window.selectAllGridBooks = () => {
-            document.querySelectorAll(document.getElementById('section-fiches').classList.contains('active') ? '#fiches-content [data-fiche-id]' : '#grid-content .grid-item[data-id]').forEach(el => {
+            if (document.getElementById('section-fiches').classList.contains('active')) {
+                ficheFilteredIds.forEach(id => selectedGridIds.add(id));
+            } else document.querySelectorAll('#grid-content .grid-item[data-id]').forEach(el => {
                 const id = parseInt(el.dataset.ficheId || el.dataset.id);
                 if (!isNaN(id)) selectedGridIds.add(id);
             });
             updateGridSelectUI();
-            render();
+            renderChangedLibrary();
         };
 
         function updateGridSelectUI() {
