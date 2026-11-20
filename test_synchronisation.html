@@ -6206,6 +6206,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
         const testBookRef = (uid,key) => doc(db,'users_libs',uid,'books',key);
         const testBookCollection = uid => collection(db,'users_libs',uid,'books');
         const testBaselines = new Map();
+        const testLocalBaselines = new Map();
         const testQueues = new Map();
         function canonical(value) {
             if(Array.isArray(value)) return '['+value.map(canonical).join(',')+']';
@@ -6244,9 +6245,17 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
         // Transactions par petits lots : ne jamais écraser un livre modifié ailleurs.
         async function commitTestBooks(uid,books,profile=null) {
             if(auth.currentUser?.uid!==uid || !testBaselines.has(uid)) throw new Error('Bibliothèque non chargée');
-            const before=testBaselines.get(uid), next=testMap(books), ops=[];
-            for(const [key,value] of next) if(!before.has(key)||canonical(before.get(key))!==canonical(value)) ops.push({key,value});
-            for(const key of before.keys()) if(!next.has(key)) ops.push({key,value:null});
+            const before=testBaselines.get(uid), local=testLocalBaselines.get(uid), next=testMap(books), ops=[];
+            if(!local) throw new Error('Bibliothèque non chargée');
+            for(const [key,value] of next) {
+                const previous=local.get(key);
+                if(profile===null && canonical(previous)===canonical(value)) continue;
+                const stored={...value};
+                // A position normalized for display is not itself a user edit.
+                if(profile===null && previous && previous.id===value.id && before.has(key)) stored.id=before.get(key).id;
+                if(canonical(before.get(key))!==canonical(stored)) ops.push({key,value:stored,localValue:value});
+            }
+            for(const key of local.keys()) if(!next.has(key)) ops.push({key,value:null});
             // Une restauration reste atomique tant que le protocole de reprise n'est pas validé.
             if(profile!==null && ops.length>100) throw new Error('Restauration volumineuse : utiliser la version actuelle ou attendre la validation du nouveau protocole');
             const batches=[];
@@ -6269,7 +6278,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                     if(profile!==null)tx.set(doc(db,'user_profiles',uid),profile);
                 });
                 // Avancer uniquement après confirmation du serveur ; un nouvel essai reprend les opérations restantes.
-                for(const o of group){if(o.value===null)before.delete(o.key);else before.set(o.key,o.value);}
+                for(const o of group){if(o.value===null){before.delete(o.key);local.delete(o.key);}else{before.set(o.key,o.value);local.set(o.key,o.localValue);}}
             }
         }
         function syncLibraryWrite() {
@@ -6308,6 +6317,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                 if(auth.currentUser?.uid!==uid)throw new Error('Account changed');
                 testBaselines.set(uid,map);
                 library=testArray(map).map(b=>JSON.parse(JSON.stringify(b)));
+                testLocalBaselines.set(uid,testMap(JSON.parse(JSON.stringify(library))));
                 const slots=new Map(library.map(b=>[b.id,b]));
                 const length=Math.max(MAX_BOOKS,...slots.keys());
                 library=Array.from({length},(_,i)=>slots.get(i+1)||empty(i+1));
