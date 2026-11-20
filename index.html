@@ -277,13 +277,11 @@
         html.dark .grid-thumb-add { background: transparent !important; }
 
         .sortable-ghost { opacity: 0.3; }
-        .grid-move-handle { display:none; }
         #grid-content .grid-press-ready .grid-thumb { outline:3px solid var(--gold-accent); outline-offset:3px; }
         #grid-content .grid-item { user-select:none; }
         @media (any-pointer: coarse) {
             #grid-content .grid-item { touch-action:pan-y; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
             #grid-content .grid-item img { -webkit-touch-callout:none; -webkit-user-drag:none; }
-            #grid-content .grid-move-handle { display:flex; position:absolute; z-index:7; right:5px; top:45%; width:32px; height:36px; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,.65); border-radius:9px; background:rgba(20,20,20,.78); color:white; font-size:20px; touch-action:none; cursor:grab; }
             #grid-content .grid-press-ready .grid-thumb { outline:3px solid var(--gold-accent); outline-offset:3px; }
         }
 
@@ -1870,7 +1868,27 @@ html:not(.dark) .ms-btn.ms-active { color: #393128 !important; }
 html:not(.dark) .ms-panel { color: #393128; }
 html:not(.dark) .ms-panel .ms-item { color: #393128; }
 html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
-</style>
+
+#fiches-content .fiche-select-mode { padding-top: 46px !important; cursor:pointer; }
+#fiches-content .fiche-selected { outline: 3px solid var(--gold-accent); outline-offset: 2px; }
+.fiche-check { position:absolute; top:10px; left:12px; z-index:5; width:28px; height:28px; border:2px solid var(--gold-accent); border-radius:50%; background:var(--paper-bg); color:var(--gold-accent); font-weight:900; }
+.fiche-check.checked { background:var(--gold-accent); color:white; }
+#fiches-content .fiche-press-ready { outline:2px solid var(--gold-accent); }
+#fiches-content .fiche-container img { -webkit-touch-callout:none; -webkit-user-drag:none; }
+
+        /* Mes Fiches : aligner les commandes sur la largeur des fiches. */
+        @media (min-width: 768px) {
+            html:has(#section-fiches.active) #search-bar-container {
+                width: 100%; max-width: 900px; margin-inline: auto;
+            }
+            html:has(#section-fiches.active) #search-bar-container > .flex.flex-wrap {
+                gap: 8px; align-items: center;
+            }
+            html:has(#section-fiches.active) #search-bar-container #filter-sort {
+                min-width: 0; max-width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
 
@@ -5705,20 +5723,20 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
         var gridSortable = null;
         gridSortable = Sortable.create(gridEl, {
             // Sur écran tactile, laisser le défilement natif prioritaire.
-            delay: 450,
+            delay: 350,
             delayOnTouchOnly: true,
+            supportPointer: false,
             touchStartThreshold: 5,
-            fallbackTolerance: 4,
+            fallbackTolerance: 8,
             animation: 150,
             ghostClass: 'sortable-ghost',
             filter: function(evt, target) {
-                const el = evt.target;
-                const touch = evt.pointerType === 'touch' || evt.type === 'touchstart' || !!evt.touches;
-                return !!target.closest('.add-card') || (touch && !el.closest('.grid-move-handle'));
+                return !!target.closest('.add-card');
             },
             preventOnFilter: false,
-            onStart: function () { clearGridMousePress(); },
+            onStart: function () { clearGridMousePress(); clearGridTouchPress(); gridSuppressClickUntil = Date.now()+700; },
             onEnd: async function (evt) {
+                gridSuppressClickUntil = Date.now()+350;
                 if (evt.oldIndex === evt.newIndex) return;
 
                 // Quand un tri (date / note) est actif, l'ordre affiché n'est pas l'ordre réel :
@@ -5806,7 +5824,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             clearGridMousePress();
             if (e.button !== 0 || (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents)) return;
             const item = e.target.closest('.grid-item[data-id]');
-            if (!item || item.classList.contains('add-card') || e.target.closest('.grid-move-handle')) return;
+            if (!item || item.classList.contains('add-card')) return;
             const press = {item, id:Number(item.dataset.id), x:e.clientX, y:e.clientY, ready:false};
             gridMousePress = press;
             press.timer = setTimeout(() => {
@@ -5835,7 +5853,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             setTimeout(render, 0);
         }, true);
         window.addEventListener('blur', clearGridMousePress);
-        // Sur mobile, appui long sur la couverture = sélection, poignée = déplacement.
+        // Mobile : maintenir puis glisser = déplacement ; maintenir immobile puis relâcher = sélection.
         let gridTouchPress = null;
         let gridSuppressClickUntil = 0;
         function clearGridTouchPress() {
@@ -5847,7 +5865,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
         gridEl.addEventListener('touchstart', e => {
             clearGridTouchPress();
             const item = e.target.closest('.grid-item[data-id]');
-            if (!item || item.classList.contains('add-card') || e.target.closest('.grid-move-handle') || e.touches.length !== 1) return;
+            if (!item || item.classList.contains('add-card') || e.touches.length !== 1) return;
             const t = e.touches[0];
             const press = {item, id: Number(item.dataset.id), x:t.clientX, y:t.clientY, ready:false};
             gridTouchPress = press;
@@ -5856,7 +5874,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                 press.ready = true;
                 item.classList.add('grid-press-ready');
                 if (navigator.vibrate) navigator.vibrate(25);
-            }, 550);
+            }, 650);
         }, {passive:true});
         gridEl.addEventListener('touchmove', e => {
             if (!gridTouchPress) return;
@@ -5873,13 +5891,13 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             gridSelectMode = true;
             selectedGridIds.add(press.id);
             updateGridSelectUI();
-            render();
+            setTimeout(render, 0);
         }, {passive:false});
         gridEl.addEventListener('contextmenu', e => {
             if (gridTouchPress || (matchMedia('(any-pointer: coarse)').matches && e.target.closest('.grid-item'))) e.preventDefault();
         });
         gridEl.addEventListener('click', e => {
-            if (e.target.closest('.grid-move-handle') || Date.now()<gridSuppressClickUntil) { e.preventDefault(); e.stopImmediatePropagation(); }
+            if (Date.now()<gridSuppressClickUntil) { e.preventDefault(); e.stopImmediatePropagation(); }
         }, true);
 
         // Un clic dans le vide autour des couvertures quitte la sélection.
@@ -6573,7 +6591,6 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             document.getElementById('grid-content').innerHTML = filteredGrid.map(b => `
                 <div class="grid-item ${gridSelectMode && selectedGridIds.has(b.id) ? 'grid-item-selected' : ''}" data-id="${b.id}" onclick="${gridSelectMode ? `toggleGridSelection(${b.id})` : `jumpToFiche(${b.id})`}">
                     <div class="grid-thumb relative">
-                        <span class="grid-move-handle" title="Déplacer le livre" aria-label="Déplacer le livre">⠿</span>
                         ${gridSelectMode ? `<span class="grid-select-checkbox ${selectedGridIds.has(b.id) ? 'checked' : ''}">${selectedGridIds.has(b.id) ? '✓' : ''}</span>` : ''}
                         ${b.cover ? `<img src="${b.cover}" referrerpolicy="no-referrer" class="w-full h-full object-cover ${b.isDNF ? 'grayscale opacity-50' : (b.isToRead ? 'saturate-[.35] brightness-95' : '')}">` : `<div class="flex flex-col items-center justify-center text-center px-3 py-2 h-full w-full ${b.isDNF ? 'grayscale opacity-50' : (b.isToRead ? 'saturate-[.35] brightness-95' : '')}"><span class="grid-thumb-title font-serif font-black uppercase leading-tight text-[15px]">${b.title}</span><span class="mt-2 text-[10px] font-bold uppercase tracking-wide" style="color: var(--gold-accent);">${b.author || ''}</span></div>`}
                         ${b.isToRead ? `<div class="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden"><div class="absolute" style="width:150px; height:150px; border-radius:9999px; background: radial-gradient(circle, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 55%, transparent 75%);"></div><svg width="190" height="190" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="position:relative;"><rect x="14" y="6" width="36" height="6" rx="3" fill="var(--gold-accent)" opacity="0.9"/><rect x="14" y="52" width="36" height="6" rx="3" fill="var(--gold-accent)" opacity="0.9"/><path d="M20,12 L44,12 C44,20 38,29 33,32 C38,35 44,44 44,52 L20,52 C20,44 26,35 31,32 C26,29 20,20 20,12 Z" fill="var(--gold-accent)" opacity="0.9"/></svg></div>` : ''}
@@ -6605,7 +6622,8 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
 
             // HTML FICHES
             document.getElementById('fiches-content').innerHTML = filteredFiches.length > 0 ? filteredFiches.map(book => `
-                <div id="fiche-scroll-${book.id}" class="fiche-container">
+                <div id="fiche-scroll-${book.id}" data-fiche-id="${book.id}" class="fiche-container ${gridSelectMode ? 'fiche-select-mode' : ''} ${gridSelectMode && selectedGridIds.has(book.id) ? 'fiche-selected' : ''}">
+                    ${gridSelectMode ? `<button type="button" class="fiche-check ${selectedGridIds.has(book.id) ? 'checked' : ''}" aria-label="Sélectionner le livre" aria-pressed="${selectedGridIds.has(book.id)}">${selectedGridIds.has(book.id) ? '✓' : ''}</button>` : ''}
                     <div class="flex items-center justify-between gap-4 mb-6 flex-wrap">
                         <div class="flex items-center gap-4 flex-wrap">
                             <button onclick="goToBibliotheque()" class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-gold-accent transition-colors">
@@ -7050,6 +7068,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
         };
 
         window.showSection = (id, forceScrollTop = false) => {
+            if (gridSelectMode && !document.getElementById('section-' + id)?.classList.contains('active')) window.cancelGridSelectMode();
             if(forceScrollTop || (window.innerWidth <= 767 && id === 'fiches')) window.scrollTo({top: 0, behavior: 'instant'});
             document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -8152,6 +8171,61 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             submitBtn.onclick = closeGoodreadsImport;
         };
 
+
+        // Sélection des fiches : mêmes identifiants et actions que la grille.
+        const ficheSelectionRoot = document.getElementById('fiches-content');
+        let fichePress = null, ficheIgnoreClick = 0;
+        const ficheInteractive = 'button,a,input,select,textarea,[role="button"],[contenteditable]';
+        function clearFichePress() {
+            if (!fichePress) return;
+            clearTimeout(fichePress.timer);
+            fichePress.card.classList.remove('fiche-press-ready');
+            fichePress = null;
+        }
+        ficheSelectionRoot.addEventListener('pointerdown', e => {
+            clearFichePress();
+            const card = e.target.closest('[data-fiche-id]');
+            if (!card || e.button !== 0 || !e.isPrimary || e.target.closest(ficheInteractive)) return;
+            const p = {card, id:Number(card.dataset.ficheId), x:e.clientX, y:e.clientY, pointer:e.pointerId, ready:false};
+            fichePress = p;
+            p.timer = setTimeout(() => {
+                if (fichePress !== p) return;
+                p.ready = true;
+                card.classList.add('fiche-press-ready');
+                if (e.pointerType === 'touch' && navigator.vibrate) navigator.vibrate(25);
+            },550);
+        });
+        document.addEventListener('pointermove', e => {
+            if (fichePress && e.pointerId === fichePress.pointer && Math.hypot(e.clientX-fichePress.x,e.clientY-fichePress.y)>9) clearFichePress();
+        }, true);
+        document.addEventListener('pointercancel', clearFichePress, true);
+        document.addEventListener('pointerup', e => {
+            const p = fichePress;
+            if (!p || e.pointerId !== p.pointer) return;
+            clearFichePress();
+            if (!p.ready) return;
+            ficheIgnoreClick = Date.now()+500;
+            gridSelectMode = true;
+            selectedGridIds.add(p.id);
+            updateGridSelectUI();
+            render();
+        }, true);
+        ficheSelectionRoot.addEventListener('contextmenu', e => { if (fichePress) e.preventDefault(); });
+        ficheSelectionRoot.addEventListener('dragstart', e => { if (fichePress) { e.preventDefault(); } });
+        ficheSelectionRoot.addEventListener('click', e => {
+            if (Date.now()<ficheIgnoreClick) { e.preventDefault(); e.stopImmediatePropagation(); return; }
+            const card = e.target.closest('[data-fiche-id]');
+            if (!gridSelectMode || !card) return;
+            e.preventDefault(); e.stopImmediatePropagation();
+            window.toggleGridSelection(Number(card.dataset.ficheId));
+        }, true);
+        document.addEventListener('click', e => {
+            if (!gridSelectMode || Date.now()<ficheIgnoreClick || !document.getElementById('section-fiches').classList.contains('active')) return;
+            if (!e.target.closest('#app-content') || e.target.closest('[data-fiche-id],#grid-select-bar,#app-header,#search-bar-container,button,input,select,textarea,a,[role="dialog"]')) return;
+            window.cancelGridSelectMode();
+        });
+        window.addEventListener('blur', clearFichePress);
+
         window.toggleGridSelectMode = () => {
             gridSelectMode = !gridSelectMode;
             if (!gridSelectMode) selectedGridIds.clear();
@@ -8174,8 +8248,8 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
         };
 
         window.selectAllGridBooks = () => {
-            document.querySelectorAll('#grid-content .grid-item[data-id]').forEach(el => {
-                const id = parseInt(el.dataset.id);
+            document.querySelectorAll(document.getElementById('section-fiches').classList.contains('active') ? '#fiches-content [data-fiche-id]' : '#grid-content .grid-item[data-id]').forEach(el => {
+                const id = parseInt(el.dataset.ficheId || el.dataset.id);
                 if (!isNaN(id)) selectedGridIds.add(id);
             });
             updateGridSelectUI();
