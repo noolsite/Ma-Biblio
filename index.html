@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST Firebase</title>
+    <title>Nool</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -6145,7 +6145,16 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                 showSection('bibliotheque', true);
                 await loadUserLibrary();
                 if(auth.currentUser?.uid!==user.uid)return;
-                document.getElementById('app-content').classList.remove('hidden');
+                const app = document.getElementById('app-content');
+                // Mesurer la bibliothèque en situation réelle avant son premier affichage.
+                app.style.visibility = 'hidden';
+                app.classList.remove('hidden');
+                render('bibliotheque');
+                updateBookcaseWidth();
+                await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                if (auth.currentUser?.uid !== user.uid) { app.style.visibility = ''; return; }
+                updateBookcaseWidth();
+                app.style.visibility = '';
                 if (!hasSeenTutorial) {
                     openTutorial(true);
                 } else if (!currentPseudo) {
