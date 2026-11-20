@@ -277,6 +277,15 @@
         html.dark .grid-thumb-add { background: transparent !important; }
 
         .sortable-ghost { opacity: 0.3; }
+        .grid-move-handle { display:none; }
+        #grid-content .grid-press-ready .grid-thumb { outline:3px solid var(--gold-accent); outline-offset:3px; }
+        #grid-content .grid-item { user-select:none; }
+        @media (any-pointer: coarse) {
+            #grid-content .grid-item { touch-action:pan-y; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
+            #grid-content .grid-item img { -webkit-touch-callout:none; -webkit-user-drag:none; }
+            #grid-content .grid-move-handle { display:flex; position:absolute; z-index:7; right:5px; top:45%; width:32px; height:36px; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,.65); border-radius:9px; background:rgba(20,20,20,.78); color:white; font-size:20px; touch-action:none; cursor:grab; }
+            #grid-content .grid-press-ready .grid-thumb { outline:3px solid var(--gold-accent); outline-offset:3px; }
+        }
 
         /* --- DASHBOARD STATS --- */
         .stat-card {
@@ -1759,6 +1768,8 @@ html.dark #section-liste #book-list-body tr.book-list-moving { background:#40372
         /* Dashboard cover carousels */
         .dash-cover-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
         .dash-cover-head .section-label { margin:0; }
+        .dash-cover-title { display:flex; align-items:center; gap:8px; min-width:0; }
+        .dash-cover-count { color:var(--gold-accent); font-size:11px; font-weight:800; font-variant-numeric:tabular-nums; border:1px solid color-mix(in srgb,var(--gold-accent) 35%,transparent); background:color-mix(in srgb,var(--gold-accent) 9%,transparent); border-radius:999px; padding:3px 8px; line-height:1.2; flex-shrink:0; }
         .dash-cover-nav { display:flex; gap:7px; }
         .dash-cover-nav button { width:32px; height:32px; display:grid; place-items:center; border:1px solid rgba(197,160,89,.35); border-radius:50%; color:var(--gold-accent); background:transparent; cursor:pointer; transition:background .2s,opacity .2s; }
         .dash-cover-nav button:hover:not(:disabled) { background:rgba(197,160,89,.15); }
@@ -1808,6 +1819,57 @@ html.dark #section-liste #book-list-head th:hover { background:#342f25; }
     #section-liste #book-list-head .sort-indicator {width:12px;font-size:11px;}
 }
 
+
+/* Mode clair — papier ivoire, lin et sable */
+html:not(.dark) { --paper-bg:#e9e2d6; --light-card:#f6f0e5; --light-inset:#eee6d9; --light-line:#d9cdbb; --light-muted:#766b5c; }
+html:not(.dark) body { background-color:var(--paper-bg); color:#302a23; }
+html:not(.dark) #app-header { background-color:rgba(239,231,218,.96)!important; border-color:var(--light-line)!important; }
+html:not(.dark) #bottom-nav { background:rgba(239,231,218,.97)!important; border-color:var(--light-line)!important; }
+html:not(.dark) :is(.bg-white,.auth-card,.fiche-container,.stat-card,#edit-modal > div) { background-color:var(--light-card)!important; border-color:var(--light-line); }
+html:not(.dark) :is(.fiche-container,.stat-card,#app-content .bg-white.rounded-2xl) { box-shadow:0 4px 18px rgba(77,57,32,.065); }
+html:not(.dark) :is(.bg-slate-50,.bg-gray-50,.avis-box,.podium-item,.grid-thumb:not(.grid-thumb-add),.bs-meta span,.bs-actions .bs-secondary) { background-color:var(--light-inset)!important; border-color:var(--light-line); }
+html:not(.dark) :is(.modal-input,.filter-select,.dashboard-year-select,.book-list-filter,#shelf-search,.shelf-layout-controls select,input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range]):not([type=file]),textarea,select) { background-color:#f0e8db!important; border-color:var(--light-line)!important; color:#393128; }
+html:not(.dark) :is(.modal-input,.filter-select,input,textarea,select):focus { border-color:var(--gold-accent)!important; }
+html:not(.dark) :is(.border-slate-100,.border-slate-200,.border-gray-100,.border-gray-200,.info-item,.info-grid) { border-color:var(--light-line)!important; }
+html:not(.dark) :is(.section-label,.text-slate-400,.text-gray-400,.text-slate-500,.tab-btn:not(.active)) { color:var(--light-muted); }
+html:not(.dark) :is(.ms-panel,.saga-bubble,.saga-bubble-arrow,.profile-dropdown-inner,#shelf-layout-toolbar.shelf-layout-toolbar,#book-sheet-panel,.shelf-tooltip) { background-color:var(--light-card); border-color:var(--light-line); }
+html:not(.dark) #section-liste .book-list-wrap { --list-surface:#f6f0e5; --list-alt:#efe7da; --list-line:#ded2c0; --list-hover:color-mix(in srgb,var(--gold-accent) 15%,#f6f0e5); --list-head:#e5d9c6; --list-chip:#e9dfcf; --list-muted:#665b4e; }
+html:not(.dark) .avis-box { border-left-color:var(--gold-accent); }
+html:not(.dark) .grid-thumb-add { background:transparent!important; }
+html:not(.dark) #landing-page { --np-bg:#e9e2d6; --np-card:#f6f0e5; --np-line:#d9cdbb; }
+
+
+/* Menu profil : zone de survol transparente, seule la carte est colorée */
+.profile-dropdown { background:transparent; border:0; }
+html:not(.dark) .profile-dropdown-inner { background:var(--light-card); border-color:var(--light-line); box-shadow:0 12px 30px rgba(77,57,32,.16); }
+html:not(.dark) .profile-dropdown-item { color:#393128; }
+html:not(.dark) .profile-dropdown-item:not(:last-child) { border-bottom-color:var(--light-line); }
+html:not(.dark) .profile-dropdown-item:hover { background:var(--light-inset); }
+html:not(.dark) .profile-dropdown-item.danger { color:#b94444; }
+html:not(.dark) .profile-dropdown-item.danger:hover { background:#f2e0da; }
+
+/* Livre de l'année : doré champagne, en harmonie avec le mode ivoire */
+html:not(.dark) #best-book-banner {
+    background: linear-gradient(112deg,#dfbd78 0%,#f2dca8 45%,#f7ebd0 100%) !important;
+    border:1px solid #c5a059 !important;
+    box-shadow:0 4px 14px rgba(133,95,38,.12), inset 0 1px 0 rgba(255,255,255,.55);
+}
+html:not(.dark) #best-book-banner .best-book-label,
+html:not(.dark) #best-book-banner .best-book-author-label { color:#78521e !important; }
+html:not(.dark) #best-book-title { color:#352719 !important; }
+html:not(.dark) #best-book-banner .best-book-thumb-wrap { border-color:#b38b44; }
+
+/* Contraste des filtres en mode clair, y compris les boutons multisélection. */
+html:not(.dark) #filter-year-grid,
+html:not(.dark) .ms-btn,
+html:not(.dark) .filter-select,
+html:not(.dark) .dashboard-year-select {
+    color: #393128 !important;
+}
+html:not(.dark) .ms-btn.ms-active { color: #393128 !important; }
+html:not(.dark) .ms-panel { color: #393128; }
+html:not(.dark) .ms-panel .ms-item { color: #393128; }
+html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
 </style>
 </head>
 <body>
@@ -2150,8 +2212,8 @@ html.dark #section-liste #book-list-head th:hover { background:#342f25; }
             <button id="bn-bibliotheque" class="active" onclick="showSection('bibliotheque', true)"><svg viewBox="0 0 24 24"><path d="M5 4v16M9.5 6v14M14 4v16M18.2 5.4l2.8 13.2M3 20.5h18"/></svg><span data-i18n="nav.libraryShort">Biblio</span></button>
             <button id="bn-stats" onclick="showSection('stats', true)"><svg viewBox="0 0 24 24"><path d="M5 20v-9M12 20V4M19 20v-6"/></svg><span data-i18n="nav.dashboardShort">Stats</span></button>
             <button id="bn-grille" onclick="showSection('grille', true)"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg><span data-i18n="nav.gridShort">Grille</span></button>
-            <button id="bn-fiches" onclick="showSection('fiches', true)"><svg viewBox="0 0 24 24"><path d="M12 6.5C10 5 7 4.5 4 5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V5c-3-.5-6 0-8 1.5zM12 6.5v13"/></svg><span data-i18n="nav.fichesShort">Fiches</span></button>
             <button id="bn-liste" onclick="showSection('liste', true)"><svg viewBox="0 0 24 24"><path d="M8 5h12M8 12h12M8 19h12M3.5 5h.01M3.5 12h.01M3.5 19h.01"/></svg><span>Liste</span></button>
+            <button id="bn-fiches" onclick="showSection('fiches', true)"><svg viewBox="0 0 24 24"><path d="M12 6.5C10 5 7 4.5 4 5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V5c-3-.5-6 0-8 1.5zM12 6.5v13"/></svg><span data-i18n="nav.fichesShort">Fiches</span></button>
         </nav>
         
         <div id="app-header" class="sticky top-0 z-50 bg-[#FAF9F6]/95 backdrop-blur-md shadow-sm border-b border-slate-100">
@@ -2163,8 +2225,8 @@ html.dark #section-liste #book-list-head th:hover { background:#342f25; }
                         <button onclick="showSection('bibliotheque', true)" id="btn-bibliotheque" class="tab-btn active" data-i18n="nav.library">Bibliothèque</button>
                         <button onclick="showSection('stats', true)" id="btn-stats" class="tab-btn" data-i18n="nav.dashboard">Tableau de Bord</button>
                         <button onclick="showSection('grille', true)" id="btn-grille" class="tab-btn" data-i18n="nav.grid">Ma Grille</button>
-                        <button onclick="showSection('fiches', true)" id="btn-fiches" class="tab-btn" data-i18n="nav.fiches">Mes Fiches</button>
                         <button onclick="showSection('liste', true)" id="btn-liste" class="tab-btn">Liste</button>
+                        <button onclick="showSection('fiches', true)" id="btn-fiches" class="tab-btn" data-i18n="nav.fiches">Mes Fiches</button>
                     </div>
 
                     <div id="app-header-actions" class="flex items-center gap-3">
@@ -2277,8 +2339,10 @@ html.dark #section-liste #book-list-head th:hover { background:#342f25; }
 
                     <div class="flex items-center gap-2">
                         <button onclick="openBulkImport()" id="bulk-import-btn" class="flex items-center gap-1.5 text-[9px] font-black text-white uppercase tracking-widest bg-[var(--gold-accent)] px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity" data-i18n="bulkImport.openBtn">✨ Import rapide</button>
-                        <button onclick="toggleGridSelectMode()" id="grid-select-toggle-btn" class="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest bg-slate-100 text-slate-500 px-3 py-1.5 rounded-full hover:bg-slate-200 transition-colors" data-i18n="filters.gridSelectBtn">☑️ Sélectionner</button>
-                        <button onclick="resetFilters()" class="text-[9px] font-bold text-red-400 uppercase tracking-widest hover:underline ml-auto" data-i18n="filters.reset">Réinitialiser</button>
+                        <div class="ml-auto flex items-center gap-2 sm:gap-3">
+                            <button onclick="toggleGridSelectMode()" id="grid-select-toggle-btn" class="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest bg-slate-100 text-slate-500 px-3 py-1.5 rounded-full hover:bg-slate-200 transition-colors" data-i18n="filters.gridSelectBtn">☑️ Sélectionner</button>
+                            <button onclick="resetFilters()" class="text-[9px] font-bold text-red-400 uppercase tracking-widest hover:underline" data-i18n="filters.reset">Réinitialiser</button>
+                        </div>
                     </div>
 
                     <div id="grid-select-bar" class="hidden flex items-center justify-between text-xs mt-2 pt-2 border-t border-slate-100">
@@ -2383,12 +2447,12 @@ html.dark #section-liste #book-list-head th:hover { background:#342f25; }
                 </div>
 
                 <div id="my-favorites-card" class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm mt-4 hidden">
-                    <div class="dash-cover-head"><p class="section-label mb-3" data-i18n="dash.myFavorites">⭐ Mes Favoris</p><div class="dash-cover-nav"><button type="button" data-direction="-1" aria-label="Défiler vers la gauche" title="Défiler vers la gauche" aria-controls="my-favorites-row"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button><button type="button" data-direction="1" aria-label="Défiler vers la droite" title="Défiler vers la droite" aria-controls="my-favorites-row"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button></div></div>
+                    <div class="dash-cover-head"><div class="dash-cover-title"><p class="section-label mb-3" data-i18n="dash.myFavorites">⭐ Mes Favoris</p><span id="my-favorites-count" class="dash-cover-count" aria-live="polite">0</span></div><div class="dash-cover-nav"><button type="button" data-direction="-1" aria-label="Défiler vers la gauche" title="Défiler vers la gauche" aria-controls="my-favorites-row"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button><button type="button" data-direction="1" aria-label="Défiler vers la droite" title="Défiler vers la droite" aria-controls="my-favorites-row"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button></div></div>
                     <div id="my-favorites-row" class="dash-cover-track flex gap-4 overflow-x-auto"></div>
                 </div>
 
                 <div id="my-wishlist-card" class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm mt-4 hidden">
-                    <div class="dash-cover-head"><p class="section-label mb-3" data-i18n="dash.myWishlist">📚 Ma Wishlist</p><div class="dash-cover-nav"><button type="button" data-direction="-1" aria-label="Défiler vers la gauche" title="Défiler vers la gauche" aria-controls="my-wishlist-row"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button><button type="button" data-direction="1" aria-label="Défiler vers la droite" title="Défiler vers la droite" aria-controls="my-wishlist-row"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button></div></div>
+                    <div class="dash-cover-head"><div class="dash-cover-title"><p class="section-label mb-3" data-i18n="dash.myWishlist">📚 Ma Wishlist</p><span id="my-wishlist-count" class="dash-cover-count" aria-live="polite">0</span></div><div class="dash-cover-nav"><button type="button" data-direction="-1" aria-label="Défiler vers la gauche" title="Défiler vers la gauche" aria-controls="my-wishlist-row"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button><button type="button" data-direction="1" aria-label="Défiler vers la droite" title="Défiler vers la droite" aria-controls="my-wishlist-row"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button></div></div>
                     <div id="my-wishlist-row" class="dash-cover-track flex gap-4 overflow-x-auto"></div>
                 </div>
 
@@ -2474,6 +2538,11 @@ html.dark #section-liste #book-list-head th:hover { background:#342f25; }
                             <button type="button" onclick="renameShelfLayout()" title="Renommer cette disposition">✎</button>
                             <button type="button" onclick="deleteShelfLayout()" title="Supprimer cette disposition">🗑</button>
                         </div>
+                        <div class="shelf-layout-controls" style="margin-top:14px;border-top:1px solid rgba(197,160,89,.25);padding-top:12px">
+                            <label for="shelf-preset" class="shelf-layout-heading" style="margin:0">Dispositions prédéfinies</label>
+                            <select id="shelf-preset"><option value="title">Titre · A à Z</option><option value="author">Auteur · nom A à Z</option><option value="genre">Genre</option><option value="saga">Sagas et auteurs</option><option value="rating">Note · décroissante</option><option value="year">Publication · ancienne à récente</option><option value="pages">Nombre de pages · croissant</option></select>
+                            <button type="button" onclick="createPresetShelfLayout()">Créer cette disposition</button>
+                        </div>
                         <p class="shelf-layout-tip">Modifie les livres, puis appuie sur Enregistrer pour conserver cette disposition. ＋ crée une copie sous un autre nom.</p>
                     </div>
                     <div id="bookcase-container" class="bookcase"></div>
@@ -2511,7 +2580,7 @@ html.dark #section-liste #book-list-head th:hover { background:#342f25; }
                                 <button onclick="setThemeColor('#5B4B8A')" data-theme-color="#5B4B8A" class="theme-color-swatch w-8 h-8 rounded-full" style="background:#5B4B8A" data-i18n-title="colors.plum" title="Prune"></button>
                                 <button onclick="setThemeColor('#4A4A4A')" data-theme-color="#4A4A4A" class="theme-color-swatch w-8 h-8 rounded-full" style="background:#4A4A4A" data-i18n-title="colors.anthracite" title="Anthracite"></button>
                                 <label class="relative w-8 h-8 rounded-full cursor-pointer flex items-center justify-center overflow-hidden border border-slate-200" style="background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);" data-i18n-title="colors.custom" title="Couleur personnalisée">
-                                    <input type="color" id="custom-theme-color" value="#C5A059" oninput="setThemeColor(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                    <input type="color" id="custom-theme-color" value="#C5A059" oninput="previewThemeColor(this.value)" onchange="setThemeColor(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                                 </label>
                             </div>
                         </div>
@@ -3228,16 +3297,43 @@ html.dark #section-liste #book-list-head th:hover { background:#342f25; }
             document.getElementById('profile-photo-remove-btn')?.classList.toggle('hidden', !url);
         }
 
-        window.setThemeColor = async (color) => {
+        // Aperçu léger : aucune reconstruction ni écriture réseau pendant le glissement.
+        let themePreviewFrame = 0;
+        let pendingThemeColor = '';
+        window.previewThemeColor = (color) => {
+            pendingThemeColor = color;
+            if (themePreviewFrame) return;
+            themePreviewFrame = requestAnimationFrame(() => {
+                themePreviewFrame = 0;
+                document.documentElement.style.setProperty('--gold-accent', pendingThemeColor);
+                document.querySelectorAll('.theme-color-swatch').forEach(sw => {
+                    sw.classList.toggle('selected', sw.dataset.themeColor.toLowerCase() === pendingThemeColor.toLowerCase());
+                });
+                ['profile-avatar-btn', 'profile-photo-wrap'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) { el.style.backgroundColor = pendingThemeColor; el.style.borderColor = pendingThemeColor; }
+                });
+            });
+        };
+        let themeSaveTimer = 0;
+        window.setThemeColor = (color) => {
+            cancelAnimationFrame(themePreviewFrame);
+            themePreviewFrame = 0;
             applyThemeColor(color);
+            const picker = document.getElementById('custom-theme-color');
+            if (picker && picker.value.toLowerCase() !== color.toLowerCase()) picker.value = color;
             localStorage.setItem('biblio-theme-color', color);
-            if (typeof render === 'function' && currentUser) render();
-            if (!currentUser) return;
-            try {
-                await setDoc(doc(db, "user_profiles", currentUser.uid), { themeColor: color }, { merge: true });
-            } catch (err) {
-                alert("Erreur lors de l'enregistrement de la palette : " + err.message);
-            }
+            clearTimeout(themeSaveTimer);
+            const uid = currentUser?.uid;
+            themeSaveTimer = setTimeout(async () => {
+                if (!uid || currentUser?.uid !== uid) return;
+                if (typeof render === 'function') render();
+                try {
+                    await setDoc(doc(db, "user_profiles", uid), { themeColor: color }, { merge: true });
+                } catch (err) {
+                    console.warn("Erreur lors de l'enregistrement de la palette", err);
+                }
+            }, 350);
         };
 
         // --- ÉTAGÈRE (Tableau de bord) ---
@@ -3460,6 +3556,37 @@ html.dark #section-liste #book-list-head th:hover { background:#342f25; }
             shelfLayoutDirty = false;
             refreshShelfLayoutPicker();
             await persistShelfLayouts();
+        };
+        window.createPresetShelfLayout = async () => {
+            const picker = document.getElementById('shelf-preset');
+            const mode = picker.value;
+            const books = library.filter(b => b.title);
+            if (!books.length) return alert('Ajoute d’abord des livres.');
+            if (shelfLayoutDirty && !confirm('Les modifications non enregistrées de la disposition actuelle seront perdues. Continuer ?')) return;
+            const cmp = (a,b) => String(a || '\uffff').localeCompare(String(b || '\uffff'), 'fr', {sensitivity:'base', numeric:true});
+            const surname = a => String(a || '').trim().split(/\s+/).pop();
+            const author = (a,b) => cmp(surname(a.author),surname(b.author)) || cmp(a.author,b.author);
+            const number = (a,b,key,desc=false) => {
+                const x = Number(a[key]), y = Number(b[key]);
+                const valid = v => Number.isFinite(v) && v > 0;
+                return valid(x) && valid(y) ? (desc ? y-x : x-y) : valid(x) ? -1 : valid(y) ? 1 : 0;
+            };
+            const compare = {title:(a,b)=>cmp(a.title,b.title), author, genre:(a,b)=>cmp(bookGenres(a.genre)[0],bookGenres(b.genre)[0]), saga:(a,b)=>Number(!a.saga)-Number(!b.saga)||author(a,b)||cmp(a.saga,b.saga)||(a.saga && b.saga ? sagaBookOrder(a,b) : 0), rating:(a,b)=>number(a,b,'rating',true), year:(a,b)=>number(a,b,'year'), pages:(a,b)=>number(a,b,'pages')};
+            books.sort((a,b)=>compare[mode](a,b)||cmp(a.title,b.title)||author(a,b));
+            const positions = {};
+            const width = books.reduce((sum,b)=>sum+spineWidthFor(b)+6,0);
+            const target = Math.max(120, Math.ceil(width / Math.max(1,SHELF_ROW_COUNT)));
+            let row=0, x=4;
+            for (const b of books) {
+                const w=spineWidthFor(b);
+                if (x>4 && x+w>target && row<SHELF_ROW_COUNT-1) {row++;x=4;}
+                positions[b.uid]={row,x}; x+=w+6;
+            }
+            const id='layout_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+            shelfLayouts[id]={name:picker.selectedOptions[0].textContent,positions,decorations:{},rows:SHELF_ROW_COUNT};
+            loadShelfLayout(id);
+            await persistShelfLayouts();
+            toggleShelfLayoutsMenu(false);
         };
         window.renameShelfLayout = async () => {
             const layout = shelfLayouts[activeShelfLayoutId];
@@ -5584,8 +5711,13 @@ html.dark #section-liste #book-list-head th:hover { background:#342f25; }
             fallbackTolerance: 4,
             animation: 150,
             ghostClass: 'sortable-ghost',
-            filter: '.add-card',
+            filter: function(evt, target) {
+                const el = evt.target;
+                const touch = evt.pointerType === 'touch' || evt.type === 'touchstart' || !!evt.touches;
+                return !!target.closest('.add-card') || (touch && !el.closest('.grid-move-handle'));
+            },
             preventOnFilter: false,
+            onStart: function () { clearGridMousePress(); },
             onEnd: async function (evt) {
                 if (evt.oldIndex === evt.newIndex) return;
 
@@ -5660,6 +5792,106 @@ html.dark #section-liste #book-list-head th:hover { background:#342f25; }
                     console.error('Erreur de sauvegarde', err);
                 }
             }
+        });
+
+        // Souris : un appui immobile sélectionne, un glissement immédiat déplace.
+        let gridMousePress = null;
+        function clearGridMousePress() {
+            if (!gridMousePress) return;
+            clearTimeout(gridMousePress.timer);
+            gridMousePress.item.classList.remove('grid-press-ready');
+            gridMousePress = null;
+        }
+        gridEl.addEventListener('mousedown', e => {
+            clearGridMousePress();
+            if (e.button !== 0 || (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents)) return;
+            const item = e.target.closest('.grid-item[data-id]');
+            if (!item || item.classList.contains('add-card') || e.target.closest('.grid-move-handle')) return;
+            const press = {item, id:Number(item.dataset.id), x:e.clientX, y:e.clientY, ready:false};
+            gridMousePress = press;
+            press.timer = setTimeout(() => {
+                if (gridMousePress !== press) return;
+                press.ready = true;
+                item.classList.add('grid-press-ready');
+            }, 550);
+        }, true);
+        document.addEventListener('mousemove', e => {
+            const p = gridMousePress;
+            if (p && !p.ready && Math.hypot(e.clientX-p.x,e.clientY-p.y)>4) clearGridMousePress();
+        }, true);
+        document.addEventListener('dragstart', e => {
+            if (!gridMousePress) return;
+            if (gridMousePress.ready) e.preventDefault();
+            else clearGridMousePress();
+        }, true);
+        document.addEventListener('mouseup', e => {
+            const p = gridMousePress;
+            clearGridMousePress();
+            if (!p || !p.ready || e.button !== 0) return;
+            gridSuppressClickUntil = Date.now()+350;
+            gridSelectMode = true;
+            selectedGridIds.add(p.id);
+            updateGridSelectUI();
+            setTimeout(render, 0);
+        }, true);
+        window.addEventListener('blur', clearGridMousePress);
+        // Sur mobile, appui long sur la couverture = sélection, poignée = déplacement.
+        let gridTouchPress = null;
+        let gridSuppressClickUntil = 0;
+        function clearGridTouchPress() {
+            if (!gridTouchPress) return;
+            clearTimeout(gridTouchPress.timer);
+            gridTouchPress.item.classList.remove('grid-press-ready');
+            gridTouchPress = null;
+        }
+        gridEl.addEventListener('touchstart', e => {
+            clearGridTouchPress();
+            const item = e.target.closest('.grid-item[data-id]');
+            if (!item || item.classList.contains('add-card') || e.target.closest('.grid-move-handle') || e.touches.length !== 1) return;
+            const t = e.touches[0];
+            const press = {item, id: Number(item.dataset.id), x:t.clientX, y:t.clientY, ready:false};
+            gridTouchPress = press;
+            press.timer = setTimeout(() => {
+                if (gridTouchPress !== press) return;
+                press.ready = true;
+                item.classList.add('grid-press-ready');
+                if (navigator.vibrate) navigator.vibrate(25);
+            }, 550);
+        }, {passive:true});
+        gridEl.addEventListener('touchmove', e => {
+            if (!gridTouchPress) return;
+            const t = e.touches[0];
+            if (!t || e.touches.length !== 1 || Math.hypot(t.clientX-gridTouchPress.x,t.clientY-gridTouchPress.y)>10) clearGridTouchPress();
+        }, {passive:true});
+        gridEl.addEventListener('touchcancel', clearGridTouchPress, {passive:true});
+        gridEl.addEventListener('touchend', e => {
+            const press = gridTouchPress;
+            clearGridTouchPress();
+            if (!press || !press.ready) return;
+            if (e.cancelable) e.preventDefault();
+            gridSuppressClickUntil = Date.now()+700;
+            gridSelectMode = true;
+            selectedGridIds.add(press.id);
+            updateGridSelectUI();
+            render();
+        }, {passive:false});
+        gridEl.addEventListener('contextmenu', e => {
+            if (gridTouchPress || (matchMedia('(any-pointer: coarse)').matches && e.target.closest('.grid-item'))) e.preventDefault();
+        });
+        gridEl.addEventListener('click', e => {
+            if (e.target.closest('.grid-move-handle') || Date.now()<gridSuppressClickUntil) { e.preventDefault(); e.stopImmediatePropagation(); }
+        }, true);
+
+        // Un clic dans le vide autour des couvertures quitte la sélection.
+        document.addEventListener('click', e => {
+            if (!gridSelectMode || !document.getElementById('section-grille').classList.contains('active')) return;
+            if (Date.now() < gridSuppressClickUntil || Sortable.dragged) return;
+            const target = e.target;
+            if (!(target instanceof Element)) return;
+            if (!target.closest('#app-content') || target.closest('#app-header, .grid-item, #grid-select-bar, button, input, select, textarea, a, [role="dialog"], [role="button"]')) return;
+            const area = document.getElementById('section-grille').parentElement;
+            if (!area.contains(target) && target !== document.getElementById('app-content')) return;
+            window.cancelGridSelectMode();
         });
 
         // Désactive le glisser-déposer quand un tri est actif (l'ordre affiché n'est alors pas modifiable)
@@ -6197,6 +6429,7 @@ html.dark #section-liste #book-list-head th:hover { background:#342f25; }
             const myFavorites = library.filter(b => b.title && b.isMyFavorite).sort((a,b) => (a.dashboardFavoriteOrder ?? Number.MAX_SAFE_INTEGER) - (b.dashboardFavoriteOrder ?? Number.MAX_SAFE_INTEGER));
             const myFavCard = document.getElementById('my-favorites-card');
             myFavCard.classList.toggle('hidden', myFavorites.length === 0);
+            document.getElementById('my-favorites-count').textContent = myFavorites.length;
             document.getElementById('my-favorites-row').innerHTML = myFavorites.map(b => `
                 <div data-book-id="${b.id}" class="shrink-0 w-20 cursor-grab" onclick="if (!this.parentElement.dataset.dragging) jumpToFiche(${b.id})" title="${(b.title || '').replace(/"/g, '&quot;')}">
                     <div class="w-20 h-28 rounded-lg overflow-hidden shadow-sm border border-slate-100 flex items-center justify-center bg-slate-50">
@@ -6209,6 +6442,7 @@ html.dark #section-liste #book-list-head th:hover { background:#342f25; }
             const myWishlist = library.filter(b => b.title && b.isToRead).sort((a,b) => (a.dashboardWishlistOrder ?? Number.MAX_SAFE_INTEGER) - (b.dashboardWishlistOrder ?? Number.MAX_SAFE_INTEGER));
             const myWishlistCard = document.getElementById('my-wishlist-card');
             myWishlistCard.classList.toggle('hidden', myWishlist.length === 0);
+            document.getElementById('my-wishlist-count').textContent = myWishlist.length;
             document.getElementById('my-wishlist-row').innerHTML = myWishlist.map(b => `
                 <div data-book-id="${b.id}" class="shrink-0 w-20 cursor-grab" onclick="if (!this.parentElement.dataset.dragging) jumpToFiche(${b.id})" title="${(b.title || '').replace(/"/g, '&quot;')}">
                     <div class="w-20 h-28 rounded-lg overflow-hidden shadow-sm border border-slate-100 flex items-center justify-center bg-slate-50">
@@ -6339,6 +6573,7 @@ html.dark #section-liste #book-list-head th:hover { background:#342f25; }
             document.getElementById('grid-content').innerHTML = filteredGrid.map(b => `
                 <div class="grid-item ${gridSelectMode && selectedGridIds.has(b.id) ? 'grid-item-selected' : ''}" data-id="${b.id}" onclick="${gridSelectMode ? `toggleGridSelection(${b.id})` : `jumpToFiche(${b.id})`}">
                     <div class="grid-thumb relative">
+                        <span class="grid-move-handle" title="Déplacer le livre" aria-label="Déplacer le livre">⠿</span>
                         ${gridSelectMode ? `<span class="grid-select-checkbox ${selectedGridIds.has(b.id) ? 'checked' : ''}">${selectedGridIds.has(b.id) ? '✓' : ''}</span>` : ''}
                         ${b.cover ? `<img src="${b.cover}" referrerpolicy="no-referrer" class="w-full h-full object-cover ${b.isDNF ? 'grayscale opacity-50' : (b.isToRead ? 'saturate-[.35] brightness-95' : '')}">` : `<div class="flex flex-col items-center justify-center text-center px-3 py-2 h-full w-full ${b.isDNF ? 'grayscale opacity-50' : (b.isToRead ? 'saturate-[.35] brightness-95' : '')}"><span class="grid-thumb-title font-serif font-black uppercase leading-tight text-[15px]">${b.title}</span><span class="mt-2 text-[10px] font-bold uppercase tracking-wide" style="color: var(--gold-accent);">${b.author || ''}</span></div>`}
                         ${b.isToRead ? `<div class="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden"><div class="absolute" style="width:150px; height:150px; border-radius:9999px; background: radial-gradient(circle, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 55%, transparent 75%);"></div><svg width="190" height="190" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="position:relative;"><rect x="14" y="6" width="36" height="6" rx="3" fill="var(--gold-accent)" opacity="0.9"/><rect x="14" y="52" width="36" height="6" rx="3" fill="var(--gold-accent)" opacity="0.9"/><path d="M20,12 L44,12 C44,20 38,29 33,32 C38,35 44,44 44,52 L20,52 C20,44 26,35 31,32 C26,29 20,20 20,12 Z" fill="var(--gold-accent)" opacity="0.9"/></svg></div>` : ''}
