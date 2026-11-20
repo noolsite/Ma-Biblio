@@ -3315,7 +3315,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                 await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
                 await signInWithPopup(auth, googleProvider);
             }
-            catch (err) { alert(err.message); }
+            catch (err) { await testDialog("Connexion Google : "+(err.code||"")+" "+err.message,false); }
         };
 
         // --- MOT DE PASSE OUBLIÉ ---
@@ -6047,9 +6047,24 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             finally{backupBusy(false);}
         };
 
+        function testDialog(message, confirmation = true) {
+            return new Promise(resolve => {
+                const panel = document.createElement('div');
+                panel.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:20px';
+                const card = document.createElement('div');
+                card.style.cssText = 'background:#faf9f6;color:#222;padding:24px;border-radius:16px;max-width:460px;width:100%;box-shadow:0 12px 40px #0004';
+                const title = document.createElement('h2'); title.textContent = 'Nool — Version de test'; title.style.cssText='font-size:22px;margin-bottom:14px';
+                const text = document.createElement('p'); text.textContent=message; text.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;margin-bottom:20px';
+                card.append(title,text);
+                const addButton = (label,value) => {const b=document.createElement('button');b.type='button';b.textContent=label;b.style.cssText='padding:10px 16px;margin:4px;border:1px solid #c5a059;border-radius:8px;background:#fff;color:#222';b.onclick=()=>{panel.remove();resolve(value);};card.append(b);};
+                if(confirmation)addButton('Annuler',false);
+                addButton(confirmation?'Continuer':'Fermer',true);
+                panel.append(card);document.body.append(panel);
+            });
+        }
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                if(!confirm("NOOL TEST — confirme que tu utilises exclusivement ton compte secondaire. Les réglages de profil restent partagés avec la version normale.")){await signOut(auth);return;}
+                if(!(await testDialog("Vérifie que tu as sauvegardé ce compte et fermé les anciennes versions de Nool. Les réglages du profil restent partagés. Continuer avec ce compte ?"))){await signOut(auth);return;}
                 currentUser = user;
                 customPhotoUrl = null;
                 photoRemoved = false;
@@ -6231,7 +6246,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             try {
                 let {marker,map}=await readTestBooks(uid);
                 if(!marker) {
-                    if(!confirm('NOOL TEST : utiliser uniquement le compte secondaire. Copier la bibliothèque ancienne vers les documents de test ? Les livres originaux ne seront pas modifiés.')) {await signOut(auth);return;}
+                    if(!(await testDialog('Copier la bibliothèque ancienne vers les documents de test ? Les livres originaux ne seront pas modifiés.'))) {await signOut(auth);return;}
                     if(map.size)throw new Error('Existing unmarked test data');
                     const old=await getDocFromServer(doc(db,'users_libs',uid));
                     const original=old.exists()?old.data().books:[];
@@ -6253,7 +6268,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                 const length=Math.max(MAX_BOOKS,...slots.keys());
                 library=Array.from({length},(_,i)=>slots.get(i+1)||empty(i+1));
                 if(migrateSagas())await syncLibraryWrite();
-            } catch(e) {console.error(e);alert('NOOL TEST : chargement ou migration impossible. Aucun livre ancien supprimé. '+e.message);await signOut(auth);return;}
+            } catch(e) {console.error(e);await signOut(auth);await testDialog('Chargement ou migration impossible. Aucun livre ancien supprimé.\nErreur : '+(e.code||'')+' '+e.message,false);return;}
             updateFilterOptions();
             render();
             // Recherche automatique suspendue dans cette version de test.
