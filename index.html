@@ -3035,7 +3035,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                 if (cancel || !currentUser) return;
                 const previous=[];
                 cards().forEach((el,index)=>{const book=library.find(b=>String(b.id)===el.dataset.bookId);if(book){previous.push([book,book[field]]);book[field]=index;}});
-                try {await setDoc(doc(db,'users_libs',currentUser.uid),{books:library},{merge:true});}
+                try {await syncLibraryWrite();}
                 catch(err){previous.forEach(([book,value])=>{if(value===undefined)delete book[field];else book[field]=value;});alert('Impossible de sauvegarder le nouvel ordre.');render();}
             }
             document.addEventListener('pointerup',e=>finish(e));
@@ -4558,7 +4558,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
         };
 
         async function saveSpineCustomization() {
-            await setDoc(doc(db, "users_libs", currentUser.uid), { books: library });
+            await syncLibraryWrite();
             render();
             refreshSpineEditorUI();
         }
@@ -5847,7 +5847,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                 render();
 
                 try {
-                    await setDoc(doc(db, "users_libs", currentUser.uid), { books: library });
+                    await syncLibraryWrite();
                 } catch (err) {
                     console.error('Erreur de sauvegarde', err);
                 }
@@ -5976,6 +5976,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             for(const id of ['nool-backup-export','nool-backup-restore']) document.getElementById(id).disabled=value;
         }
         async function readNoolBackup(uid) {
+            if(hasUnsavedLibrary())throw new Error("Pending library sync");
             const [books,profile]=await Promise.all([getDocFromServer(doc(db,'users_libs',uid)),getDocFromServer(doc(db,'user_profiles',uid))]);
             if(auth.currentUser?.uid!==uid || !books.exists() || !Array.isArray(books.data().books)) throw new Error('Library unavailable');
             const preferences={};
@@ -6125,6 +6126,34 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             return 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
         }
 
+
+        // Écriture optimiste : l'interface n'attend plus le réseau.
+        const librarySyncStates = new Map();
+        function syncState(uid) {
+            if (!librarySyncStates.has(uid)) librarySyncStates.set(uid,{pending:0,seq:0,error:false});
+            return librarySyncStates.get(uid);
+        }
+        function paintLibrarySync() {
+            const uid=auth.currentUser?.uid;
+            const st=uid && librarySyncStates.get(uid);
+            let el=document.getElementById('nool-library-sync');
+            if(!el){el=document.createElement('button');el.id='nool-library-sync';el.type='button';el.setAttribute('aria-live','polite');el.style.cssText='position:fixed;top:78px;left:50%;transform:translateX(-50%);z-index:9999;border:1px solid #c5a059;border-radius:20px;padding:7px 13px;background:#222;color:#e8c884;font-size:12px;box-shadow:0 3px 12px #0003';document.body.appendChild(el);el.onclick=()=>{const st=librarySyncStates.get(auth.currentUser?.uid);if(st?.error&&!st.pending)void syncLibraryWrite().catch(()=>{});};}
+            el.hidden=!st||(!st.pending&&!st.error);
+            el.style.display=el.hidden?'none':'block';
+            el.textContent=st?.pending?backupText('Synchronisation…','Syncing…'):backupText('Échec de sauvegarde — Réessayer','Save failed — Retry');
+            el.disabled=!!st?.pending;
+        }
+        function syncLibraryWrite() {
+            const uid=currentUser?.uid;
+            if(!uid||auth.currentUser?.uid!==uid)return Promise.reject(new Error('Account changed'));
+            const st=syncState(uid), seq=++st.seq;
+            const snapshot=JSON.parse(JSON.stringify(library));
+            st.pending++;paintLibrarySync();
+            return Promise.resolve().then(()=>setDoc(doc(db,'users_libs',uid),{books:snapshot})).then(()=>{if(seq===st.seq)st.error=false;},err=>{if(seq===st.seq)st.error=true;console.error('Nool sync',err);throw err;}).finally(()=>{st.pending--;paintLibrarySync();});
+        }
+        function hasUnsavedLibrary(){const st=librarySyncStates.get(auth.currentUser?.uid);return !!(st&&(st.pending||st.error));}
+        window.addEventListener('beforeunload',e=>{if(hasUnsavedLibrary()){e.preventDefault();e.returnValue='';}});
+
         async function loadUserLibrary() {
             const docRef = doc(db, "users_libs", currentUser.uid);
             const docSnap = await getDoc(docRef);
@@ -6170,13 +6199,13 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                     if (r.pages) { if (setBookPages(b, r.pages)) reflowed = true; changed++; } else { b.pagesLookup = 2; }
                 } catch (err) { /* réessayé à la prochaine session */ }
                 if (changed > 0 && changed % 10 === 0) {
-                    try { await setDoc(doc(db, "users_libs", currentUser.uid), { books: library }); } catch (e) {}
+                    try { await syncLibraryWrite(); } catch (e) {}
                     if (reflowed) { await saveShelfPositions(); await saveShelfDecorations(); reflowed = false; }
                     render();
                 }
                 await new Promise(r => setTimeout(r, 400));
             }
-            try { await setDoc(doc(db, "users_libs", currentUser.uid), { books: library }); } catch (e) {}
+            try { await syncLibraryWrite(); } catch (e) {}
             if (reflowed) { await saveShelfPositions(); await saveShelfDecorations(); }
             render();
             backfillingPages = false;
@@ -6224,7 +6253,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
         const persistBookListOrder = async () => {
             try {
                 if (typeof db !== 'undefined' && currentUser?.uid) {
-                    await setDoc(doc(db, "users_libs", currentUser.uid), { books: library });
+                    await syncLibraryWrite();
                 }
             } catch(e) { console.warn('Impossible de sauvegarder le nouvel ordre des livres', e); }
         };
@@ -6253,8 +6282,6 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             });
         };
         window.renderBookList = () => {
-            const activeFilter = document.activeElement?.matches?.('[data-list-filter]') ? document.activeElement.dataset.listFilter : null;
-            const caret = activeFilter ? document.activeElement.selectionStart : null;
             const body = document.getElementById('book-list-body');
             const head = document.getElementById('book-list-head');
             const filtersRow = document.getElementById('book-list-filters');
@@ -6267,20 +6294,22 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                 const arrow = active ? (bookListSort.direction===1 ? '↑' : '↓') : '↕';
                 return `<th data-col="${key}" draggable="true" class="book-list-sort-head${active ? ' is-sorted' : ''}" aria-sort="${active ? (bookListSort.direction===1 ? 'ascending' : 'descending') : 'none'}" onclick="sortBookList('${key}')" title="Cliquer pour trier · Glisser pour déplacer"><span class="list-head-content"><span class="list-head-label">${esc(col[1])}</span><span class="sort-indicator" aria-hidden="true">${arrow}</span></span></th>`;
             }).join('');
-            filtersRow.innerHTML = order.map(key => {
+            const filterOrder = order.join(',');
+            if (filtersRow.dataset.filterOrder !== filterOrder) {
+                const previous = Object.fromEntries([...filtersRow.querySelectorAll('[data-list-filter]')].map(input => [input.dataset.listFilter, input.value]));
+                filtersRow.innerHTML = order.map(key => {
                 const col = bookListColumns.find(c=>c[0]===key);
                 if(key==='status') return `<th data-col="status"><select class="book-list-filter" data-list-filter="status" aria-label="Filtrer le statut" onchange="renderBookList()"><option value="">Tous</option><option value="lu">Lu</option><option value="à lire">À lire</option><option value="abandonné">Abandonné</option></select></th>`;
                 return `<th data-col="${key}"><input class="book-list-filter" data-list-filter="${key}" placeholder="Filtrer" aria-label="Filtrer ${esc(col[1].toLowerCase())}" title="Filtrer ${esc(col[1].toLowerCase())}" oninput="renderBookList()"></th>`;
             }).join('');
-            const oldFilters = window.bookListFilterValues || {};
-            document.querySelectorAll('[data-list-filter]').forEach(input => {
-                if (oldFilters[input.dataset.listFilter] !== undefined) input.value = oldFilters[input.dataset.listFilter];
-            });
-            const filters = {};
-            document.querySelectorAll('[data-list-filter]').forEach(input => {
-                filters[input.dataset.listFilter] = input.value.trim().toLocaleLowerCase('fr');
-            });
-            window.bookListFilterValues = filters;
+                filtersRow.querySelectorAll('[data-list-filter]').forEach(input => {
+                    input.value = previous[input.dataset.listFilter] ?? window.bookListFilterValues?.[input.dataset.listFilter] ?? '';
+                });
+                filtersRow.dataset.filterOrder = filterOrder;
+            }
+            const rawFilters = Object.fromEntries([...filtersRow.querySelectorAll('[data-list-filter]')].map(input => [input.dataset.listFilter, input.value]));
+            window.bookListFilterValues = rawFilters;
+            const filters = Object.fromEntries(Object.entries(rawFilters).map(([key,value]) => [key,value.trim().toLocaleLowerCase('fr')]));
             const activeCount = Object.values(filters).filter(Boolean).length;
             const filterBadge = document.getElementById('book-list-active-filters');
             if (filterBadge) filterBadge.textContent = activeCount ? `(${activeCount})` : '';
@@ -6308,10 +6337,6 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             const count = document.getElementById('book-list-count');
             if (count) count.textContent = `${rows.length} livre${rows.length > 1 ? 's' : ''}`;
             bindBookListDrag();
-            if (activeFilter) {
-                const next=document.querySelector(`[data-list-filter="${activeFilter}"]`);
-                if(next){ next.focus({preventScroll:true}); if(caret!=null && next.setSelectionRange) next.setSelectionRange(caret,caret); }
-            }
         };
         window.selectBookListRange = (fromId,toId) => {
             const rows=[...document.querySelectorAll('#book-list-body tr[data-book-row]')];
@@ -6814,7 +6839,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
 
             targetBook.isFavorite = !currentState;
 
-            await setDoc(doc(db, "users_libs", currentUser.uid), { books: library });
+            void syncLibraryWrite().catch(()=>{});
             render();
         };
 
@@ -6828,7 +6853,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             }
             targetBook.isAllTimeFavorite = !currentState;
 
-            await setDoc(doc(db, "users_libs", currentUser.uid), { books: library });
+            void syncLibraryWrite().catch(()=>{});
             render();
         };
 
@@ -6836,7 +6861,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             const targetBook = library.find(b => b.id === id);
             if (!targetBook) return;
             targetBook.isMyFavorite = !targetBook.isMyFavorite;
-            await setDoc(doc(db, "users_libs", currentUser.uid), { books: library });
+            void syncLibraryWrite().catch(()=>{});
             render();
         };
 
@@ -6844,7 +6869,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             const targetBook = library.find(b => b.id === id);
             if (!targetBook) return;
             targetBook.isBookClub = !targetBook.isBookClub;
-            await setDoc(doc(db, "users_libs", currentUser.uid), { books: library });
+            void syncLibraryWrite().catch(()=>{});
             render();
         };
 
@@ -7160,7 +7185,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             const newPages = parseInt(document.getElementById('in-pages').value) || 0;
             const reflowed = setBookPages(library[idx], newPages);
             if (newPages) { delete library[idx].pagesTried; delete library[idx].pagesLookup; }
-            await setDoc(doc(db, "users_libs", currentUser.uid), { books: library });
+            void syncLibraryWrite().catch(()=>{});
             if (reflowed) { await saveShelfPositions(); await saveShelfDecorations(); }
             updateFilterOptions(); render(); closeModal();
         };
@@ -7302,7 +7327,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             const nextEmptyBook = library.find(b => !b.title);
             if (nextEmptyBook) openEdit(nextEmptyBook.id);
         };
-        window.logout = () => signOut(auth);
+        window.logout = () => {if(hasUnsavedLibrary()){alert(backupText('Attends la fin de la synchronisation ou réessaie la sauvegarde avant de te déconnecter.','Wait for sync or retry before signing out.'));return;}return signOut(auth);};
         // Menu déroulant profil : clic pour toggle (mobile/tactile), en plus du survol (desktop)
         document.getElementById('profile-avatar-btn').addEventListener('click', (e) => {
             e.stopPropagation();
@@ -8002,7 +8027,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                 await new Promise(r => setTimeout(r, 150));
             }
 
-            await setDoc(doc(db, "users_libs", currentUser.uid), { books: library });
+            await syncLibraryWrite();
             updateFilterOptions();
             render();
 
@@ -8255,7 +8280,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             }
 
             finalizeImportedBooks(importedBooks);
-            await setDoc(doc(db, "users_libs", currentUser.uid), { books: library });
+            await syncLibraryWrite();
             updateFilterOptions();
             render();
 
@@ -8392,7 +8417,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             selectedGridIds.clear();
             gridSelectMode = false;
             updateGridSelectUI();
-            await setDoc(doc(db, "users_libs", currentUser.uid), { books: library });
+            void syncLibraryWrite().catch(()=>{});
             updateFilterOptions();
             render();
         };
@@ -8403,7 +8428,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             library.splice(idx, 1);
             library.push({ id: 100, title: "", author: "", cover: "", rating: 0, summary: "", end: "", genre: "", format: "-", lang: "", start: "", comment: "", isFavorite: false, isAllTimeFavorite: false, isDNF: false, isToRead: false, isMyFavorite: false });
             library.forEach((b, i) => b.id = i + 1);
-            await setDoc(doc(db, "users_libs", currentUser.uid), { books: library });
+            void syncLibraryWrite().catch(()=>{});
             updateFilterOptions();
             render();
         };
