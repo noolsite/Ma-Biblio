@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V4 — Test synchronisation</title>
+    <title>Nool — TEST V5 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -5333,8 +5333,27 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
         }
 
 
+        // Only split extremely wide rows; keep normal custom layouts untouched.
+        function expandOversizedShelves() {
+            const bc=document.getElementById('bookcase-container');
+            const limit=Math.max(1100,(bc?.clientWidth||lastBookcaseClientWidth||1200)-32);
+            const rows=Array.from({length:SHELF_ROW_COUNT},()=>[]);
+            for(const b of library){const p=shelfPositions[b.uid];if(b.title&&p&&rows[p.row])rows[p.row].push({p,w:Number(spineWidthFor(b))});}
+            for(const d of Object.values(shelfDecorations)){if(rows[d.row])rows[d.row].push({p:d,w:Math.max(104,104*(Number(d.scale)||1)),deco:true});}
+            if(!rows.some(r=>r.length>35&&r.every(o=>!o.deco)&&r.some(o=>o.p.x+o.w>limit*1.5)))return;
+            let row=0;
+            for(const items of rows){
+                if(items.length>35&&items.every(o=>!o.deco)&&items.some(o=>o.p.x+o.w>limit*1.5)){
+                    let x=4;
+                    for(const o of items.sort((a,b)=>a.p.x-b.p.x)){if(x>4&&x+o.w>limit-24){row++;x=4;}o.p.row=row;o.p.x=x;x+=o.w+6;}
+                }else for(const o of items)o.p.row=row;
+                row++;
+            }
+            SHELF_ROW_COUNT=row;renderBookcaseRows();
+        }
         function renderShelf(books) {
             reconcileShelfPositions(library.filter(b => b.title));
+            expandOversizedShelves();
             const rowElements = Array.from({ length: SHELF_ROW_COUNT }, (_, i) => document.getElementById(`bookshelf-row-${i}`));
             if (!rowElements[0]) return;
             if (!books.length) {
@@ -6351,12 +6370,13 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
                 library=testArray(map).map(b=>JSON.parse(JSON.stringify(b)));
                 testLocalBaselines.set(uid,testMap(JSON.parse(JSON.stringify(library))));
                 const slots=new Map(library.map(b=>[b.id,b]));
-                const length=Math.max(MAX_BOOKS,...slots.keys());
+                const length=Math.max(MAX_BOOKS, Math.max(0,...slots.keys())+1);
                 library=Array.from({length},(_,i)=>slots.get(i+1)||empty(i+1));
                 if(migrateSagas())await syncLibraryWrite();
             } catch(e) {console.error(e);await signOut(auth);await testDialog('Chargement ou migration impossible. Aucun livre ancien supprimé.\nErreur : '+(e.code||'')+' '+e.message,false);return;}
             updateFilterOptions();
-            render();
+            libraryViews.forEach(v=>dirtyViews.add(v));
+            render(document.querySelector('.view-section.active')?.id.replace('section-','') || 'bibliotheque');
             // Recherche automatique suspendue pour préserver la synchronisation.
         }
 
@@ -6902,7 +6922,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
 
             // HTML GRILLE
             if (wants('grille')) {
-            const nextEmptyBook = library.find(b => !b.title);
+            const nextEmptyBook = ensureEmptyBook();
             document.getElementById('grid-content').innerHTML = filteredGrid.map(b => `
                 <div class="grid-item ${gridSelectMode && selectedGridIds.has(b.id) ? 'grid-item-selected' : ''}" data-id="${b.id}" onclick="${gridSelectMode ? `toggleGridSelection(${b.id})` : `jumpToFiche(${b.id})`}">
                     <div class="grid-thumb relative">
@@ -7383,8 +7403,8 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
             const reflowed = setBookPages(library[idx], newPages);
             if (newPages) { delete library[idx].pagesTried; delete library[idx].pagesLookup; }
             void syncLibraryWrite().catch(()=>{});
-            if (reflowed) { await saveShelfPositions(); await saveShelfDecorations(); }
             closeModal(); updateFilterOptions(); renderChangedLibrary();
+            if (reflowed) { await saveShelfPositions(); await saveShelfDecorations(); }
         };
 
         window.showSection = (id, forceScrollTop = false) => {
@@ -7526,8 +7546,14 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
         window.closeModal = () => document.getElementById('edit-modal').classList.add('hidden');
         window.resetFilters = () => { document.getElementById('search-input').value = ""; ['filter-rating','filter-genre','filter-format','filter-language','filter-author','filter-month','filter-year-grid','filter-special'].forEach(clearMS); document.getElementById('filter-sort').value = "none"; render(); };
 
+        function ensureEmptyBook() {
+            const existing = library.find(b => !b.title);
+            if (existing) return existing;
+            const b = {id:library.reduce((m,b)=>Math.max(m,b.id),0)+1,title:'',author:'',cover:'',rating:0,summary:'',end:'',genre:'',format:'-',lang:'',start:'',comment:''};
+            library.push(b); return b;
+        }
         window.addNewBookFromLibrary = () => {
-            const nextEmptyBook = library.find(b => !b.title);
+            const nextEmptyBook = ensureEmptyBook();
             if (nextEmptyBook) openEdit(nextEmptyBook.id);
         };
         window.logout = () => {if(hasUnsavedLibrary()){alert(backupText('Attends la fin de la synchronisation ou réessaie la sauvegarde avant de te déconnecter.','Wait for sync or retry before signing out.'));return;}return signOut(auth);};
