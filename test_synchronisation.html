@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V31 — Test synchronisation</title>
+    <title>Nool — TEST V32 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -2556,6 +2556,26 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
   }
   #section-stats #stats-secondary-row #author-podium .olympic-podium {
     height:130px !important;
+  }
+}
+
+/* V32 — iPad uniquement : titres uniformes, sans emoji dans les 8 cartes. */
+@media (min-width:768px) and (max-width:1199px) {
+  #section-stats #stats-cards-row > .grid:first-child > .stat-card > span.text-xl.mb-1,
+  #section-stats #stats-secondary-row > .stat-card > span.text-xl.mb-1 {
+    display:none !important;
+  }
+  #section-stats #stats-cards-row > .grid:first-child > .stat-card > .section-label,
+  #section-stats #stats-secondary-row > .stat-card > .section-label,
+  #section-stats #stats-cards-row .stat-card:has(> span.text-xl.mb-1) > .section-label,
+  #section-stats #stats-secondary-row > .stat-card:has(> span.text-xl.mb-1) > .section-label {
+    top:19px !important;
+    font-size:11px !important;
+    line-height:1.35 !important;
+    font-weight:800 !important;
+    letter-spacing:.025em !important;
+    text-align:center !important;
+    text-transform:uppercase !important;
   }
 }
 </style>
