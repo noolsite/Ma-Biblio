@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V19 — Test synchronisation</title>
+    <title>Nool — TEST V20 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -2205,6 +2205,16 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
   }
   html:has(#section-fiches.active) #grid-shared-actions button:last-child {
     font-size:9px !important; padding:6px 0 !important;
+  }
+}
+/* V20 — Mobile : remonter légèrement le chiffre et sa légende dans les deux petites cartes. */
+@media (max-width:767px) {
+  #stats-secondary-row #stat-dnf,
+  #stats-secondary-row #stat-pages,
+  #stats-secondary-row #stat-dnf-pct,
+  #stats-secondary-row #stat-pages + p {
+    position:relative !important;
+    top:-10px !important;
   }
 }
 </style>
