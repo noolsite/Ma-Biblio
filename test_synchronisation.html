@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V44 — Test synchronisation</title>
+    <title>Nool — TEST V45 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -2918,6 +2918,21 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
     padding:8px 12px !important;
     min-height:30px !important;
   }
+}
+/* V45 — Fiches : pagination dorée, y compris le texte du sélecteur en mode sombre. */
+html:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool-fiche-pager {
+  color:var(--gold-accent) !important;
+}
+html:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool-fiche-pager :is(button,select) {
+  color:var(--gold-accent) !important;
+  -webkit-text-fill-color:var(--gold-accent) !important;
+  border-color:color-mix(in srgb,var(--gold-accent) 55%,transparent) !important;
+}
+html:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool-fiche-pager select {
+  color-scheme:dark light;
+}
+html:not(.dark):has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool-fiche-pager select {
+  color-scheme:light;
 }
 </style>
 </head>
