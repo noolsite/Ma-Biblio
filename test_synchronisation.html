@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V46 — Test synchronisation</title>
+    <title>Nool — TEST V47 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -2934,28 +2934,23 @@ html:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool
 html:not(.dark):has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool-fiche-pager select {
   color-scheme:light;
 }
-/* V46 — iOS Safari : supprimer le rendu natif blanc du select Fiches. */
+/* V47 — Fiches : même pagination que Liste, sur iPhone et ailleurs. */
 html:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool-fiche-pager select {
-  -webkit-appearance:none !important;
-  appearance:none !important;
-  color:var(--gold-accent) !important;
-  -webkit-text-fill-color:var(--gold-accent) !important;
-  background-color:transparent !important;
-  border:1px solid var(--gold-accent) !important;
-  border-radius:9px !important;
+  color:#332e28 !important;
+  -webkit-text-fill-color:#332e28 !important;
+  border:1px solid color-mix(in srgb,var(--gold-accent) 35%,transparent) !important;
+  background:transparent !important;
   opacity:1 !important;
-  font-weight:700 !important;
-  padding-right:20px !important;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23C5A059' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5-5 5 5M7 14l5 5 5-5'/%3E%3C/svg%3E") !important;
-  background-position:right 4px center !important;
-  background-repeat:no-repeat !important;
-  background-size:12px 12px !important;
 }
-html:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool-fiche-pager button:not(:disabled) {
+html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool-fiche-pager select {
+  color:#f2f0ea !important;
+  -webkit-text-fill-color:#f2f0ea !important;
+  color-scheme:dark !important;
+}
+html:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool-fiche-pager button {
   color:var(--gold-accent) !important;
   -webkit-text-fill-color:var(--gold-accent) !important;
-  border-color:var(--gold-accent) !important;
-  opacity:1 !important;
+  border:1px solid color-mix(in srgb,var(--gold-accent) 35%,transparent) !important;
 }
 </style>
 </head>
