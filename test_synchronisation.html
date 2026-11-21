@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V24 — Test synchronisation</title>
+    <title>Nool — TEST V25 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -450,7 +450,7 @@
         html.dark .shelf-layout-heading { color:#f2f0ea; }
         html.dark .shelf-layout-controls select { background:#262626; color:#eee; border-color:#444; }
         html.dark .shelf-layout-controls button { background:#30291e; color:#d8b878; }
-        @media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) { .shelf-layout-toolbar { margin:10px 0 14px; padding:12px; } .shelf-layout-controls { flex-wrap:wrap; } .shelf-layout-controls select { flex-basis:100%; width:100%; height:46px; font-size:14px; } .shelf-layout-controls button { flex:1; height:42px; } .shelf-layout-controls button:first-of-type { flex:2; } }
+        @media(max-width:767px) { .shelf-layout-toolbar { margin:10px 0 14px; padding:12px; } .shelf-layout-controls { flex-wrap:wrap; } .shelf-layout-controls select { flex-basis:100%; width:100%; height:46px; font-size:14px; } .shelf-layout-controls button { flex:1; height:42px; } .shelf-layout-controls button:first-of-type { flex:2; } }
 
         /* Barre de dispositions volontairement discrète */
         .shelf-layout-toolbar { margin: 8px 0 12px; padding: 9px 10px; border-color: rgba(197,160,89,.14); border-radius: 12px; box-shadow: none; }
@@ -460,7 +460,7 @@
         .shelf-layout-controls button { height: 34px; padding: 0 9px; font-size: 12px; background: transparent; }
         #shelf-layout-save { color: #80602d; background: rgba(197,160,89,.09); }
         .shelf-layout-tip { display: none; }
-        @media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+        @media (max-width: 767px) {
           .shelf-layout-toolbar { padding: 8px; margin: 6px 0 10px; }
           .shelf-layout-controls { flex-wrap: nowrap; }
           .shelf-layout-controls select { flex: 1 1 auto; width: auto; min-width: 0; height: 36px; font-size: 11px; }
@@ -477,7 +477,7 @@
         #shelf-layout-toolbar .shelf-layout-tip { display:block; margin-top:10px; }
         #shelf-layout-toggle-btn[aria-expanded="true"] { color:var(--gold-accent); }
         html.dark #shelf-layout-toolbar { background:#1e1e1e; border-color:#403727; box-shadow:0 16px 45px rgba(0,0,0,.5); }
-        @media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+        @media(max-width:767px) {
           #shelf-layout-toolbar.shelf-layout-toolbar { width:min(340px, calc(100vw - 20px)); padding:14px; }
           #shelf-layout-toolbar .shelf-layout-controls button { flex:1; height:42px; }
         }
@@ -503,7 +503,7 @@
         html.dark .ms-clear { border-bottom-color: #2f2f2f; }
 
         /* Sur téléphone : menu contextuel ancré au filtre, comme le menu de tri iOS. */
-        @media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+        @media (max-width: 767px) {
             .ms-panel.ms-mobile-open {
                 position: fixed !important;
                 right: auto !important;
@@ -709,7 +709,7 @@
         }
 
         /* ===== Adaptation téléphone (écrans de 767 px et moins) : aucune règle ci-dessous ne s'applique sur ordinateur ===== */
-        @media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+        @media (max-width: 767px) {
             /* En-tête compact : logo et boutons sur une ligne, les 4 onglets sur la ligne du dessous */
             #app-header > div { padding: 10px 14px !important; }
             #app-header-inner { display: grid !important; grid-template-columns: 1fr auto; grid-template-areas: "logo actions" "tabs tabs"; align-items: center; gap: 8px 12px !important; }
@@ -730,7 +730,7 @@
         /* ===== Aspect « application » sur téléphone (aucun effet sur ordinateur) ===== */
         #bottom-nav { display: none; }
         @keyframes appIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-        @media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+        @media (max-width: 767px) {
             #bottom-nav {
                 display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
                 padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
@@ -763,7 +763,7 @@
 
         #fab-add { display: none; }
         @keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
-        @media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+        @media (max-width: 767px) {
             /* ---- Bouton flottant ---- */
             #fab-add {
                 display: flex; align-items: center; justify-content: center; position: fixed; z-index: 61;
@@ -817,7 +817,7 @@
         }
 
         /* ===== Biblio compacte : uniquement sur téléphone ===== */
-        @media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+        @media (max-width: 767px) {
             #bibliotheque-section .section-label { font-size: 23px !important; line-height: 1.15; }
             #bibliotheque-section > .flex:first-child { margin-bottom: 12px !important; gap: 8px; }
             #bibliotheque-section .flex.items-center.gap-3 { gap: 6px !important; }
@@ -836,7 +836,7 @@
         #shelf-search-wrap { display: none; }
         #book-sheet { display: none; }
         @keyframes bsFade { from { opacity: 0; } to { opacity: 1; } }
-        @media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+        @media (max-width: 767px) {
             #bibliotheque-section .section-label { font-size: 30px; }
             #bibliotheque-section .flex.items-center.gap-3 { gap: 10px; }
             #bibliotheque-section .flex.items-center.gap-3 > button { width: 44px; height: 44px; font-size: 19px; }
@@ -1188,7 +1188,7 @@
             #landing-page .np-opts{gap:10px}
             #landing-page section{padding:60px 0}
         }
-            @media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+            @media (max-width: 767px) {
             #bibliotheque-section .section-label { font-size: 23px !important; }
             #bibliotheque-section .flex.items-center.gap-3 > button { width: 34px !important; height: 34px !important; font-size: 15px !important; }
             #shelf-search-wrap { margin: 0 0 10px !important; }
@@ -1196,7 +1196,7 @@
         }
 
         /* Correctifs téléphone : défilement libre des fiches et suppression du trait parasite */
-        @media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+        @media (max-width: 767px) {
             html:has(#section-fiches.active) { scroll-snap-type: none !important; }
             #section-fiches .fiche-container { scroll-snap-align: none !important; }
             #section-fiches #fiches-content { padding-bottom: calc(115px + env(safe-area-inset-bottom)); }
@@ -1204,13 +1204,13 @@
             #stats-cards-row .stat-card::before, #stats-cards-row .stat-card::after { content: none !important; }
         }
         /* Correctif non destructif : masquer uniquement le cadre de sélection sur mobile. */
-        @media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+        @media (max-width: 767px) {
             #shelf-marquee { display: none !important; }
         }
     
         /* Nool : commandes de décorations adaptées aux écrans tactiles.
            Desktop inchangé. */
-        @media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+        @media (max-width: 767px) {
             .shelf-decoration .decoration-resize {
                 width: 32px; height: 32px; top: -16px; left: -16px;
                 font-size: 17px; opacity: 1; z-index: 12;
@@ -1262,7 +1262,7 @@
 
     
 /* Formulaire de fiche : expérience mobile uniquement, sans changer la logique de sauvegarde */
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media (max-width: 767px) {
   #edit-modal { align-items: stretch !important; padding: 0 !important; }
   #edit-modal > div {
     display: block; width: 100% !important; max-width: none !important;
@@ -1299,7 +1299,7 @@
 }
 
 /* Correctif mobile : aucune dérive horizontale dans la fiche. */
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media (max-width: 767px) {
   #edit-modal { width: 100% !important; max-width: 100% !important; overflow-x: clip !important; }
   #edit-modal > div { width: 100% !important; min-width: 0 !important; max-width: 100% !important; overflow-x: hidden !important; overscroll-behavior-x: none; }
   #edit-modal > div *, #edit-modal > div *::before, #edit-modal > div *::after { box-sizing: border-box; }
@@ -1322,27 +1322,27 @@
 }
 .nool-date-field .nool-native-date-picker { right:10px; top:50%; transform:translateY(-50%); width:36px; height:36px; }
 .nool-date-field > .modal-input { padding-right:54px !important; }
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media(max-width:767px) {
  .nool-date-field .nool-calendar-button {right:8px; width:44px; height:44px;}
  .nool-date-field .nool-native-date-picker {right:8px; width:44px; height:44px;}
 }
 /* Calendrier iOS/Android : le vrai champ date doit recevoir le toucher. */
 .nool-native-date-picker { position:absolute; right:8px; top:50%; transform:translateY(-50%); width:38px; height:38px; opacity:0; z-index:2; cursor:pointer; }
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media (max-width:767px) {
   .nool-native-date-picker { width:44px; height:44px; right:8px; opacity:0.015; pointer-events:auto; }
   .nool-native-date-picker::-webkit-calendar-picker-indicator { position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; }
   .nool-native-date-picker + * { pointer-events:none; }
 }
 
 /* Didacticiel : accès tactile et positionnement stable */
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media (max-width:767px) {
   #tutorial-tooltip { width:calc(100vw - 32px); max-width:340px!important; box-sizing:border-box; }
   #tutorial-tooltip > div { padding:16px!important; }
   #tutorial-prev-btn, #tutorial-next-btn { min-height:42px; }
 }
 
         /* Nool — bibliothèque tactile : présentation type application, téléphone uniquement. */
-        @media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+        @media (max-width: 767px) {
           #section-bibliotheque { padding-top: 4px; }
           #bibliotheque-section { padding: 0 !important; }
           #bibliotheque-section > .flex:first-child { align-items: center; margin-bottom: 15px !important; gap: 10px; }
@@ -1396,7 +1396,7 @@
 
     
 /* NOOL · bibliothèque mobile, finition application */
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media (max-width: 767px) {
   #bibliotheque-section .bookcase {
     background: linear-gradient(155deg,#242326 0%,#1b1b1e 65%,#181719 100%) !important;
     border: 1px solid rgba(197,160,89,.17) !important;
@@ -1440,7 +1440,7 @@
         /* Tableau de bord : cartes secondaires homogènes, compactes sur téléphone. */
         #stats-secondary-row > .stat-card { height: 190px; min-height: 190px; overflow: hidden; }
         #stats-secondary-row #lang-podium { width: 100%; min-width: 0; }
-        @media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+        @media (max-width: 767px) {
             #stats-secondary-row > .stat-card { padding: 12px 8px !important; height: 176px; min-height: 176px; }
             #stats-secondary-row .section-label { font-size: 9px; line-height: 1.35; }
             #stats-secondary-row #lang-podium { gap: 4px !important; height: 125px !important; }
@@ -1451,7 +1451,7 @@
 
 
 /* Nool : graphique de lecture compact et tactile sur téléphone uniquement */
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media (max-width: 767px) {
   #reading-pace-card { padding: 18px 13px 15px !important; border-radius: 20px !important; overflow: hidden; }
   #reading-pace-label { font-size: 11px !important; line-height: 1.5; letter-spacing: .055em; margin: 0 4px 12px !important; }
   #reading-pace-card .reading-chart-wrap { height: 218px !important; min-height: 218px; }
@@ -1465,10 +1465,10 @@
         .nool-reading-tooltip-cover { width:31px; height:46px; flex:0 0 31px; border-radius:3px; object-fit:cover; background:#45403a; border:1px solid rgba(255,255,255,.15); }
         .nool-reading-tooltip-placeholder { display:flex; align-items:center; justify-content:center; text-align:center; overflow:hidden; padding:3px; font-size:6px; line-height:1.15; overflow-wrap:anywhere; color:#f3e6cb; }
         .nool-reading-tooltip-more { font-size:10px; color:#d9bf86; align-self:center; }
-        @media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) { .nool-reading-tooltip { padding:9px 10px; } .nool-reading-tooltip-cover { width:27px; height:40px; flex-basis:27px; } }
+        @media(max-width:767px) { .nool-reading-tooltip { padding:9px 10px; } .nool-reading-tooltip-cover { width:27px; height:40px; flex-basis:27px; } }
     
 /* Nool : statistiques secondaires lisibles sur téléphone */
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media (max-width: 767px) {
   #stats-secondary-row > .stat-card { height: 192px !important; min-height: 192px !important; }
   #stats-secondary-row #lang-podium {
     display: flex !important; flex-direction: column !important;
@@ -1535,7 +1535,7 @@
     color: #929292 !important;
     z-index: 2;
 }
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media (max-width: 767px) {
   #stats-cards-row .stat-card > .section-label,
   #stats-secondary-row > .stat-card > .section-label {
     top: 15px !important;
@@ -1568,7 +1568,7 @@
   min-height: 0;
 }
 #stats-secondary-row #author-podium .olympic-podium { height: 118px; }
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media (max-width: 767px) {
   #stats-cards-row .stat-card:has(> #genre-podium),
   #stats-secondary-row > .stat-card:has(> #author-podium) {
     padding-top: 40px !important;
@@ -1579,7 +1579,7 @@
 
 
 /* Ajustement ciblé mobile : descendre uniquement les contenus de Formats Lus et Langues Lues. */
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media (max-width: 767px) {
   #stats-cards-row #stat-format {
     transform: translateY(16px) !important;
   }
@@ -1613,7 +1613,7 @@
 #stats-secondary-row > .stat-card:has(> span.text-xl.mb-1) > .section-label {
   top: 43px !important;
 }
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media (max-width: 767px) {
   #stats-cards-row .stat-card > span.text-xl.mb-1,
   #stats-secondary-row > .stat-card > span.text-xl.mb-1 { top: 7px !important; }
   #stats-cards-row .stat-card:has(> span.text-xl.mb-1) > .section-label,
@@ -1636,7 +1636,7 @@
 #stats-secondary-row .stat-card:has(> #stat-pages) > :not(.section-label):not(span) {
   translate: 0 25px;
 }
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media (max-width: 767px) {
   #stats-cards-row .stat-card:has(> #stat-count) > :is(#stat-count, #stat-count-compare),
   #stats-cards-row .stat-card:has(> div > #stat-avg) > :not(.section-label):not(span),
   #stats-secondary-row .stat-card:has(> #stat-dnf) > :is(#stat-dnf, #stat-dnf-pct),
@@ -1647,7 +1647,7 @@
 
 /* Nool — uniquement les trois premières cartes des statistiques sur mobile.
    Les titres/icônes restent en haut ; les valeurs sont centrées dans la zone restante. */
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media (max-width: 767px) {
   #stats-cards-row > .grid:first-child > .stat-card:nth-child(-n+3) {
     height: 148px !important;
     min-height: 148px !important;
@@ -1894,7 +1894,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
         }
     
 /* Grille mobile compacte : trois couvertures par rangée */
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media (max-width: 767px) {
  #section-grille #grid-content { grid-template-columns:repeat(3,minmax(0,1fr)); column-gap:10px; row-gap:18px; }
  #section-grille .grid-item { min-width:0; }
  #section-grille .grid-thumb { border-radius:8px; margin-bottom:6px; }
@@ -1912,7 +1912,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
 
 
 #grid-mobile-filter-toggle { display:none; }
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media(max-width:767px) {
  html:has(:is(#section-grille, #section-fiches).active) #grid-search-line { padding-right:49px; }
  html:has(:is(#section-grille, #section-fiches).active) #grid-mobile-filter-toggle { display:flex; position:absolute; right:0; top:0; bottom:0; width:41px; align-items:center; justify-content:center; border:1px solid color-mix(in srgb,var(--gold-accent) 45%,transparent); border-radius:12px; color:var(--gold-accent); background:color-mix(in srgb,var(--gold-accent) 8%,transparent); }
  html:has(:is(#section-grille, #section-fiches).active) #grid-mobile-filter-toggle[aria-expanded="true"] { background:var(--gold-accent); color:#1a1a1a; }
@@ -1921,7 +1921,7 @@ html:not(.dark) select option { color: #393128; background-color: #f6f0e5; }
  html:has(:is(#section-grille, #section-fiches).active) #grid-mobile-filter-toggle:has(+ *) { touch-action:manipulation; }
 }
 
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) { #section-bibliotheque.active { animation:none; } }
+@media(max-width:767px) { #section-bibliotheque.active { animation:none; } }
 /* Compact fiche toolbar, shared controls retained in Ma Grille. */
 #fiche-top-pager, #fiche-bottom-pager { display:none; }
 html:has(#section-fiches.active) #fiche-top-pager:not(:empty),
@@ -1929,7 +1929,7 @@ html:has(#section-fiches.active) #fiche-bottom-pager:not(:empty) { display:flex;
 #fiche-bottom-pager:not(:empty) { margin-top:24px; margin-bottom:12px; }
 /* Same centered width as the upper toolbar and book cards. */
 #fiche-top-pager, #fiche-bottom-pager { box-sizing:border-box; width:100%; max-width:900px; margin-inline:auto; }
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media(max-width:767px) {
  #section-fiches #fiches-content { padding-bottom:0; }
  #fiche-bottom-pager:not(:empty) { margin-bottom:calc(115px + env(safe-area-inset-bottom)); }
 }
@@ -1950,7 +1950,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
 .nool-list-pager-wrap:not(:empty) { display:flex;justify-content:flex-end;margin:14px 0; }
 .nool-list-pager-wrap .nool-fiche-pager { flex-wrap:wrap; }
 /* V14 — Mobile : supprimer le panneau blanc qui encadre la bibliothèque. */
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media (max-width:767px) {
   #section-bibliotheque #bibliotheque-section {
     background: transparent !important;
     border: 0 !important;
@@ -1961,7 +1961,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
 }
 
 /* V16 — Mobile : cartes DNF et Pages lues, composition centrée et régulière. */
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media (max-width: 767px) {
   #stats-secondary-row > .stat-card:nth-child(1),
   #stats-secondary-row > .stat-card:nth-child(3) {
     position: relative !important;
@@ -2002,7 +2002,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
 }
 
 /* V17 — Mobile : commandes plus cohérentes et sur une même ligne. */
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media (max-width:767px) {
   /* Bibliothèque : boutons aux tons crème / or, comme les autres commandes. */
   #section-bibliotheque #bibliotheque-section > .flex:first-child > .flex > button {
     color:#87692e !important;
@@ -2062,7 +2062,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
 }
 
 /* V18 — Mobile : ligne de commandes sans chevauchement. */
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media (max-width:767px) {
   html:has(#section-fiches.active) #search-bar-container {
     display:grid !important;
     grid-template-columns:minmax(0,1fr) auto;
@@ -2137,7 +2137,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
 }
 
 /* V19 — Mobile : actions lisibles et tableau de bord réorganisé. */
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media (max-width:767px) {
   /* Fiches : retrouver des libellés lisibles, sans chevauchement avec le pager. */
   html:has(#section-fiches.active) #grid-shared-actions { gap:8px !important; }
   html:has(#section-fiches.active) #grid-select-toggle-btn {
@@ -2208,7 +2208,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
   }
 }
 /* V20 — Mobile : remonter légèrement le chiffre et sa légende dans les deux petites cartes. */
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media (max-width:767px) {
   #stats-secondary-row #stat-dnf,
   #stats-secondary-row #stat-pages,
   #stats-secondary-row #stat-dnf-pct,
@@ -2219,7 +2219,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
 }
 
 /* V21 — Mobile : pagination des Fiches identique à celle de Liste. */
-@media (max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media (max-width:767px) {
   html:has(#section-fiches.active) #fiche-top-pager .nool-fiche-pager {
     display:flex !important;
     align-items:center !important;
@@ -2244,58 +2244,48 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
   html:has(#section-fiches.active) #fiche-top-pager .nool-fiche-pager button:disabled {opacity:.3 !important;}
 }
 
-/* V23 — iPad : barre de navigation tactile même quand Safari annonce une largeur desktop. */
-@media (hover: none) and (pointer: coarse) and (min-width: 768px) and (max-width: 1400px) {
-  #app-header-inner { display:grid !important; grid-template-columns:1fr auto !important; grid-template-areas:"logo actions" !important; align-items:center !important; }
-  #app-logo { grid-area:logo; }
-  #app-header-actions { grid-area:actions; }
-  #nav-tabs { display:none !important; }
-  #bottom-nav { display:flex !important; }
-  #app-content { padding-bottom:calc(80px + env(safe-area-inset-bottom)); }
-}
-
-/* V24 — véritable palier tablette : la navigation reste en bas,
-   les composants prennent une taille intermédiaire selon la largeur. */
+/* V25 — Tablette uniquement : ne pas appliquer les règles téléphone aux fiches/stats.
+   Conserver les fiches d'origine et une grille de stats sans chevauchement. */
 @media (hover:none) and (pointer:coarse) and (min-width:768px) and (max-width:1400px) {
-  #bottom-nav { padding-inline:clamp(12px,2.5vw,32px) !important; }
-  #bottom-nav button { font-size:clamp(11px,1.1vw,14px) !important; min-height:60px; }
-  #bottom-nav button svg { width:clamp(24px,2.2vw,30px); height:clamp(24px,2.2vw,30px); }
-  #app-header > div { padding-inline:clamp(20px,3vw,42px) !important; }
-  #app-content > .max-w-6xl { max-width:1400px !important; padding-inline:clamp(22px,3.8vw,58px) !important; }
-
-  /* Bibliothèque : dos lisibles, rangées défilables sans miniaturisation. */
-  #bibliotheque-section .section-label { font-size:clamp(25px,2.8vw,36px) !important; }
-  #bibliotheque-section .flex.items-center.gap-3 > button { width:clamp(40px,4vw,50px) !important; height:clamp(40px,4vw,50px) !important; }
-  #shelf-phone-hint { font-size:clamp(11px,1.1vw,14px) !important; }
-  #bookcase-container { padding:clamp(14px,2vw,24px) !important; }
-
-  /* Grille : couvertures de taille tablette plutôt que trois géantes. */
-  #section-grille #grid-content { grid-template-columns:repeat(4,minmax(0,1fr)) !important; column-gap:clamp(14px,2vw,28px) !important; row-gap:clamp(20px,2.6vw,34px) !important; }
-  #section-grille .grid-thumb-title { font-size:clamp(12px,1.3vw,16px) !important; }
-  #section-grille .grid-item > .flex, #section-grille .grid-item > .flex .text-base { font-size:clamp(12px,1.15vw,15px) !important; line-height:1.35 !important; }
-
-  /* Stats : podiums et indicateurs sans étirement inutile. */
-  #stats-secondary-row { grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:clamp(14px,2vw,24px) !important; }
-  #stats-secondary-row > .stat-card { height:clamp(210px,23vw,285px) !important; min-height:0 !important; }
-  #stats-secondary-row > .stat-card .section-label { font-size:clamp(11px,1.15vw,14px) !important; }
-  #stats-secondary-row #stat-dnf, #stats-secondary-row #stat-pages { font-size:clamp(43px,5vw,65px) !important; }
-  #stats-secondary-row #author-podium { max-height:210px !important; }
-  #stats-secondary-row #lang-podium { height:auto !important; min-height:145px; }
-
-  /* Liste : titre et commandes sur deux lignes, tableau défilable. */
-  #section-liste > .flex:first-child { flex-direction:column !important; align-items:stretch !important; gap:14px !important; }
-  #section-liste #book-list-toolbar { width:100% !important; justify-content:flex-start !important; }
-  #section-liste #book-list-top-pager { margin-left:auto !important; }
-  #section-liste .book-list-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
-
-  /* Fiches : carte centrée et contrôles confortables au toucher. */
-  #section-fiches .fiche-container { max-width:min(900px,100%) !important; margin-inline:auto !important; padding:clamp(24px,3vw,38px) !important; }
-  #section-fiches .fiche-container .cover-box { max-width:clamp(220px,26vw,300px) !important; }
-  #fiche-top-pager .nool-fiche-pager button, #fiche-top-pager .nool-fiche-pager select { min-height:40px !important; font-size:14px !important; padding:7px 11px !important; }
-  html:has(#section-fiches.active) #grid-select-toggle-btn, html:has(#section-fiches.active) #grid-shared-actions button:last-child { font-size:12px !important; }
+  #app-header-inner {display:grid !important;grid-template-columns:1fr auto !important;grid-template-areas:"logo actions" !important;align-items:center !important;}
+  #app-logo {grid-area:logo;} #app-header-actions {grid-area:actions;}
+  #nav-tabs {display:none !important;}
+  #bottom-nav {display:flex !important;padding-inline:clamp(12px,2vw,30px) !important;}
+  #app-content {padding-bottom:calc(90px + env(safe-area-inset-bottom));}
+  #app-content > .max-w-6xl {max-width:1400px !important;padding-inline:clamp(20px,3.5vw,52px) !important;}
+  /* Bibliothèque et grille : tailles adaptées à la largeur tactile. */
+  #section-grille #grid-content {grid-template-columns:repeat(4,minmax(0,1fr)) !important;gap:clamp(14px,2vw,26px) !important;}
+  #section-grille .grid-thumb-title {font-size:clamp(12px,1.25vw,16px) !important;}
+  /* Stats : deux colonnes pour les cartes secondaires, deux lignes distinctes. */
+  #stats-secondary-row {display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;grid-template-rows:minmax(245px,auto) 150px !important;gap:18px !important;align-items:stretch !important;}
+  #stats-secondary-row > .stat-card {min-width:0 !important;min-height:0 !important;height:auto !important;margin:0 !important;box-sizing:border-box !important;overflow:hidden !important;}
+  #stats-secondary-row > .stat-card:nth-child(4) {grid-column:1;grid-row:1;padding:20px 16px !important;}
+  #stats-secondary-row > .stat-card:nth-child(2) {grid-column:2;grid-row:1;padding:20px 16px !important;}
+  #stats-secondary-row > .stat-card:nth-child(1) {grid-column:1;grid-row:2;}
+  #stats-secondary-row > .stat-card:nth-child(3) {grid-column:2;grid-row:2;}
+  #stats-secondary-row > .stat-card:nth-child(1),#stats-secondary-row > .stat-card:nth-child(3) {display:flex !important;flex-direction:column !important;align-items:center !important;justify-content:center !important;gap:8px !important;padding:15px !important;text-align:center !important;}
+  #stats-secondary-row > .stat-card:nth-child(1) > span:first-child,#stats-secondary-row > .stat-card:nth-child(3) > span:first-child {display:none !important;}
+  #stats-secondary-row > .stat-card:nth-child(1) .section-label,#stats-secondary-row > .stat-card:nth-child(3) .section-label {margin:0 !important;font-size:clamp(11px,1.1vw,14px) !important;}
+  #stats-secondary-row #stat-dnf,#stats-secondary-row #stat-pages {font-size:clamp(38px,4.5vw,58px) !important;line-height:1.1 !important;margin:0 !important;}
+  #stats-secondary-row #stat-dnf-pct,#stats-secondary-row #stat-pages + p {margin:0 !important;font-size:11px !important;}
+  #stats-secondary-row #author-podium {max-height:190px !important;overflow:visible !important;}
+  #stats-secondary-row #author-podium .olympic-podium {height:155px !important;}
+  #stats-secondary-row #lang-podium {height:175px !important;justify-content:center !important;}
+  /* Fiches : présentation d'origine (couverture à gauche, texte à droite). */
+  #section-fiches .fiche-container {width:100% !important;max-width:900px !important;margin:0 auto 32px !important;padding:clamp(26px,3vw,40px) !important;}
+  /* Actions visibles à gauche, pagination à droite, sur la même ligne. */
+  html:has(#section-fiches.active) #search-bar-container {display:grid !important;grid-template-columns:minmax(0,1fr) auto !important;column-gap:14px !important;row-gap:14px !important;align-items:center !important;max-width:900px !important;margin-inline:auto !important;}
+  html:has(#section-fiches.active) #grid-search-line,html:has(#section-fiches.active) #grid-filter-options {grid-column:1/-1 !important;}
+  html:has(#section-fiches.active) #grid-action-line {display:flex !important;grid-column:1 !important;grid-row:3 !important;margin:0 !important;min-width:0 !important;}
+  html:has(#section-fiches.active) #grid-shared-actions {display:flex !important;margin-left:0 !important;gap:12px !important;}
+  html:has(#section-fiches.active) #grid-select-toggle-btn {font-size:12px !important;padding:9px 14px !important;}
+  html:has(#section-fiches.active) #grid-shared-actions button:last-child {font-size:12px !important;}
+  html:has(#section-fiches.active) #fiche-top-pager {grid-column:2 !important;grid-row:3 !important;width:auto !important;max-width:none !important;margin:0 !important;justify-self:end !important;}
+  html:has(#section-fiches.active) #fiche-top-pager .pager-total {display:none !important;}
+  html:has(#section-fiches.active) #fiche-top-pager .nool-fiche-pager button,html:has(#section-fiches.active) #fiche-top-pager .nool-fiche-pager select {min-height:38px !important;font-size:13px !important;padding:6px 10px !important;}
 }
 @media (hover:none) and (pointer:coarse) and (min-width:1100px) and (max-width:1400px) {
-  #section-grille #grid-content { grid-template-columns:repeat(5,minmax(0,1fr)) !important; }
+  #section-grille #grid-content {grid-template-columns:repeat(5,minmax(0,1fr)) !important;}
 }
 </style>
 </head>
@@ -4686,7 +4676,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
                     initShelfDrag(el, { id, kind: 'decoration' }, 'decoration');
                     // Un appui simple sélectionne l'objet sur mobile ; le glissement reste géré par initShelfDrag.
                     el.addEventListener('click', event => {
-                        if (!window.matchMedia('(max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px)').matches) return;
+                        if (!window.matchMedia('(max-width: 767px)').matches) return;
                         if (event.target.closest('button')) return;
                         const alreadySelected = el.classList.contains('deco-size-selected');
                         document.querySelectorAll('.shelf-decoration.deco-size-selected').forEach(node => node.classList.remove('deco-size-selected'));
@@ -4698,7 +4688,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
 
         // Toucher ailleurs referme la commande de redimensionnement sur mobile.
         document.addEventListener('click', event => {
-            if (!window.matchMedia('(max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px)').matches) return;
+            if (!window.matchMedia('(max-width: 767px)').matches) return;
             if (event.target.closest('.shelf-decoration, #deco-size-panel')) return;
             document.querySelectorAll('.shelf-decoration.deco-size-selected').forEach(node => node.classList.remove('deco-size-selected'));
         });
@@ -5227,7 +5217,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
                     pointerId: e.pointerId,
                     group,
                 };
-                if (e.pointerType === 'touch' && window.matchMedia('(max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px)').matches) {
+                if (e.pointerType === 'touch' && window.matchMedia('(max-width: 767px)').matches) {
                     const d = activeShelfDrag;
                     d.pending = true;
                     d.px = e.clientX;
@@ -5690,7 +5680,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
                     panel.classList.toggle('hidden', !willOpen);
                     // Le bandeau des filtres défile horizontalement sur mobile :
                     // placer la liste dans body évite qu'elle soit coupée par overflow-x:auto.
-                    if (window.matchMedia('(max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px)').matches && willOpen) {
+                    if (window.matchMedia('(max-width: 767px)').matches && willOpen) {
                         document.body.appendChild(panel);
                         panel.classList.add('ms-mobile-open');
                         // Le menu s'ouvre près du bouton, sans feuille plein écran.
@@ -7834,7 +7824,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
                 coverTooltip.style.top = `${Math.max(8, top)}px`;
             };
 
-            const mobilePace = window.matchMedia('(max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px)').matches;
+            const mobilePace = window.matchMedia('(max-width: 767px)').matches;
             const mobileBarColors = counts.map((count, i) => count === Math.max(...counts) && count > 0 ? chartColor : hexToRgba(chartColor, 0.56));
             readingChart = new Chart(ctx, {
                 type: mobilePace ? 'bar' : 'line',
@@ -7942,7 +7932,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
 
         // Téléphone : toucher un livre de l'étagère ouvre un aperçu (feuille du bas) ; sur ordinateur, la fiche s'ouvre directement
         window.openBookOrFiche = (id) => {
-            if (window.matchMedia('(max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px)').matches) openBookSheet(id); else jumpToFiche(id);
+            if (window.matchMedia('(max-width: 767px)').matches) openBookSheet(id); else jumpToFiche(id);
         };
         window.closeBookSheet = () => {
             const sh = document.getElementById('book-sheet');
@@ -8046,7 +8036,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
         function placeSharedFicheActions() {
             const actions = document.getElementById('grid-shared-actions');
             const inFiches = document.getElementById('section-fiches').classList.contains('active');
-            const target = document.getElementById(inFiches && window.innerWidth >= 768 ? 'grid-filter-options' : 'grid-action-line');
+            const target = document.getElementById(inFiches && window.innerWidth >= 768 && !window.matchMedia('(hover: none) and (pointer: coarse) and (max-width: 1400px)').matches ? 'grid-filter-options' : 'grid-action-line');
             if (actions.parentElement !== target) target.appendChild(actions);
         }
         window.addEventListener('resize', placeSharedFicheActions);
