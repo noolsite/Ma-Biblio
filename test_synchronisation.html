@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V34 — Test synchronisation</title>
+    <title>Nool — TEST V35 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -2642,6 +2642,21 @@ html:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool
   }
   #stats-secondary-row #stat-pages { margin-top:10px !important; }
   #stats-secondary-row #stat-pages + p { margin-top:12px !important; }
+}
+
+/* V35 — La pagination Fiches reprend les mêmes styles natifs que Liste :
+   flèches dorées, texte du sélecteur contrasté, bordures discrètes. */
+html:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool-fiche-pager :is(button,select) {
+  border:1px solid color-mix(in srgb,var(--gold-accent) 35%,transparent) !important;
+  background:transparent !important;
+}
+html:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool-fiche-pager select {
+  color:#332e28 !important;
+  -webkit-text-fill-color:#332e28 !important;
+}
+html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool-fiche-pager select {
+  color:#f2f0ea !important;
+  -webkit-text-fill-color:#f2f0ea !important;
 }
 </style>
 </head>
