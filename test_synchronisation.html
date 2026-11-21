@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V41 — Test synchronisation</title>
+    <title>Nool — TEST V42 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -2811,6 +2811,43 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
   #section-liste .book-list-table th[data-col="pages"] { width:6% !important; }
   #section-liste .book-list-table th[data-col="status"] { width:6% !important; }
 }
+
+/* V42 — iPhone Grille : Ajouter un livre sous Import rapide,
+   sur la ligne de pagination, sans toucher aux autres vues. */
+#grid-mobile-add-book { display:none; }
+@media (max-width:767px) {
+  html:has(#section-grille.active) #search-bar-container {
+    grid-template-columns:minmax(0,1fr) auto !important;
+    column-gap:8px !important;
+  }
+  html:has(#section-grille.active) #grid-action-line {
+    grid-column:1 / -1 !important;
+    grid-row:3 !important;
+  }
+  html:has(#section-grille.active) #grid-mobile-add-book {
+    display:inline-flex !important;
+    grid-column:1 !important;
+    grid-row:4 !important;
+    justify-self:start !important;
+    align-self:center !important;
+    align-items:center;
+    border:1px solid var(--gold-accent);
+    border-radius:999px;
+    color:var(--gold-accent);
+    background:transparent;
+    font-size:10px;
+    font-weight:800;
+    line-height:1.2;
+    padding:8px 10px;
+    white-space:nowrap;
+  }
+  html:has(#section-grille.active) #grid-top-pager {
+    grid-column:2 !important;
+    grid-row:4 !important;
+    justify-self:end !important;
+    min-width:0 !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -3288,6 +3325,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
                     </div>
 
                     <div id="fiche-top-pager" aria-live="polite"></div>
+                    <button id="grid-mobile-add-book" type="button" onclick="addNewBookFromLibrary()" aria-label="Ajouter un livre">+ Ajouter un livre</button>
                     <div id="grid-top-pager" aria-live="polite"></div>
                     <div id="grid-select-bar" class="hidden flex items-center justify-between text-xs mt-2 pt-2 border-t border-slate-100">
                         <div class="flex items-center gap-3">
