@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V32 — Test synchronisation</title>
+    <title>Nool — TEST V33 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -2578,6 +2578,43 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
     text-transform:uppercase !important;
   }
 }
+
+/* V33 — Actions à gauche, paginations cohérentes entre Liste, Fiches et Grille. */
+#grid-top-pager, #grid-bottom-pager { display:none; }
+html:has(#section-grille.active) #grid-top-pager:not(:empty),
+html:has(#section-grille.active) #grid-bottom-pager:not(:empty) {display:flex;justify-content:flex-end;}
+#grid-bottom-pager:not(:empty) {margin:24px 0 20px;}
+html:has(#section-fiches.active) #grid-action-line,
+html:has(#section-grille.active) #grid-action-line {justify-content:flex-start !important;}
+html:has(#section-fiches.active) #grid-shared-actions,
+html:has(#section-grille.active) #grid-shared-actions {margin-left:0 !important;}
+/* Deux commandes à gauche, pagination à droite sur la même ligne. */
+html:has(#section-fiches.active) #search-bar-container,
+html:has(#section-grille.active) #search-bar-container {display:grid !important;grid-template-columns:minmax(0,1fr) auto !important;column-gap:12px !important;row-gap:12px !important;align-items:center !important;}
+html:has(#section-fiches.active) #grid-search-line,
+html:has(#section-grille.active) #grid-search-line,
+html:has(#section-fiches.active) #grid-filter-options,
+html:has(#section-grille.active) #grid-filter-options {grid-column:1/-1 !important;}
+html:has(#section-fiches.active) #grid-action-line,
+html:has(#section-grille.active) #grid-action-line {grid-column:1 !important;grid-row:3 !important;width:auto !important;min-width:0 !important;margin:0 !important;display:flex !important;}
+html:has(#section-fiches.active) #fiche-top-pager,
+html:has(#section-grille.active) #grid-top-pager {grid-column:2 !important;grid-row:3 !important;justify-self:end !important;align-self:center !important;width:auto !important;max-width:none !important;margin:0 !important;min-height:0 !important;}
+html:has(#section-fiches.active) #fiche-top-pager .nool-fiche-pager,
+html:has(#section-grille.active) #grid-top-pager .nool-fiche-pager {gap:5px !important;white-space:nowrap !important;flex-wrap:nowrap !important;}
+html:has(#section-fiches.active) #fiche-top-pager .pager-total,
+html:has(#section-grille.active) #grid-top-pager .pager-total {display:none !important;}
+html:has(#section-grille.active) #grid-top-pager .nool-fiche-pager button,
+html:has(#section-grille.active) #grid-top-pager .nool-fiche-pager select {min-height:34px;padding:5px 8px;}
+@media (max-width:767px) {
+ html:has(#section-fiches.active) #grid-shared-actions,
+ html:has(#section-grille.active) #grid-shared-actions {gap:5px !important;flex-wrap:nowrap !important;}
+ html:has(#section-fiches.active) #grid-select-toggle-btn,
+ html:has(#section-grille.active) #grid-select-toggle-btn {font-size:9px !important;padding:7px 8px !important;letter-spacing:0 !important;}
+ html:has(#section-fiches.active) #grid-shared-actions button:last-child,
+ html:has(#section-grille.active) #grid-shared-actions button:last-child {font-size:9px !important;letter-spacing:0 !important;}
+ html:has(#section-grille.active) #grid-top-pager .nool-fiche-pager button,
+ html:has(#section-grille.active) #grid-top-pager .nool-fiche-pager select {min-height:30px;padding:4px 5px;font-size:11px;}
+}
 </style>
 </head>
 <body>
@@ -3055,6 +3092,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
                     </div>
 
                     <div id="fiche-top-pager" aria-live="polite"></div>
+                    <div id="grid-top-pager" aria-live="polite"></div>
                     <div id="grid-select-bar" class="hidden flex items-center justify-between text-xs mt-2 pt-2 border-t border-slate-100">
                         <div class="flex items-center gap-3">
                             <button onclick="selectAllGridBooks()" class="text-[9px] font-black text-slate-500 uppercase tracking-widest hover:underline" data-i18n="filters.gridSelectAll">Tout sélectionner</button>
@@ -3170,6 +3208,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
 
             <section id="section-grille" class="view-section">
                 <div id="grid-content" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-10"></div>
+                <div id="grid-bottom-pager" aria-live="polite"></div>
             </section>
 
             <section id="section-fiches" class="view-section">
@@ -7512,6 +7551,25 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
         }
 
         const dirtyViews = new Set();
+        const gridPageSize = 20;
+        let gridPage = 0;
+        window.changeGridPage = delta => {
+            gridPage = Math.max(0, gridPage + delta);
+            render('grille');
+            window.scrollTo({top:0,behavior:'instant'});
+        };
+        window.goGridPage = value => {
+            gridPage = Math.max(0, Number(value) || 0);
+            render('grille');
+            window.scrollTo({top:0,behavior:'instant'});
+        };
+        function gridPager(total) {
+            if (total <= gridPageSize) return '';
+            const pages = Math.ceil(total / gridPageSize);
+            const en = document.documentElement.lang === 'en';
+            const options = Array.from({length:pages},(_,i)=>`<option value="${i}" ${i===gridPage?'selected':''}>${i+1} / ${pages}</option>`).join('');
+            return `<nav class="nool-fiche-pager" aria-label="${en?'Grid pagination':'Pagination de la grille'}"><span class="pager-total">${total} ${en?'books':'livres'}</span><button type="button" aria-label="${en?'Previous':'Précédente'}" onclick="changeGridPage(-1)" ${gridPage===0?'disabled':''}>‹</button><select aria-label="${en?'Grid page':'Page de la grille'}" onchange="goGridPage(this.value)">${options}</select><button type="button" aria-label="${en?'Next':'Suivante'}" onclick="changeGridPage(1)" ${gridPage===pages-1?'disabled':''}>›</button></nav>`;
+        }
         const fichePageSize = 20;
         let fichePage = 0, ficheFilteredIds = [], ficheJumpTarget = null;
         window.changeFichePage = (delta) => {
@@ -7809,7 +7867,11 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
             // HTML GRILLE
             if (wants('grille')) {
             const nextEmptyBook = ensureEmptyBook();
-            document.getElementById('grid-content').innerHTML = filteredGrid.map(b => `
+            gridPage = Math.min(gridPage, Math.max(0, Math.ceil(filteredGrid.length / gridPageSize)-1));
+            const gridPagerMarkup = gridPager(filteredGrid.length);
+            document.getElementById('grid-top-pager').innerHTML = gridPagerMarkup;
+            document.getElementById('grid-bottom-pager').innerHTML = gridPagerMarkup;
+            document.getElementById('grid-content').innerHTML = filteredGrid.slice(gridPage * gridPageSize, (gridPage+1) * gridPageSize).map(b => `
                 <div class="grid-item ${gridSelectMode && selectedGridIds.has(b.id) ? 'grid-item-selected' : ''}" data-id="${b.id}" onclick="${gridSelectMode ? `toggleGridSelection(${b.id})` : `jumpToFiche(${b.id})`}">
                     <div class="grid-thumb relative">
                         ${gridSelectMode ? `<span class="grid-select-checkbox ${selectedGridIds.has(b.id) ? 'checked' : ''}">${selectedGridIds.has(b.id) ? '✓' : ''}</span>` : ''}
@@ -8479,7 +8541,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
             document.getElementById('edit-modal').classList.remove('hidden');
         };
         window.closeModal = () => document.getElementById('edit-modal').classList.add('hidden');
-        window.resetFilters = () => { document.getElementById('search-input').value = ""; ['filter-rating','filter-genre','filter-format','filter-language','filter-author','filter-month','filter-year-grid','filter-special'].forEach(clearMS); document.getElementById('filter-sort').value = "none"; render(); };
+        window.resetFilters = () => { gridPage = 0; fichePage = 0; document.getElementById('search-input').value = ""; ['filter-rating','filter-genre','filter-format','filter-language','filter-author','filter-month','filter-year-grid','filter-special'].forEach(clearMS); document.getElementById('filter-sort').value = "none"; render(); };
 
         function ensureEmptyBook() {
             const existing = library.find(b => !b.title);
