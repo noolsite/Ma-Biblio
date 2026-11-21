@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V28 — Test synchronisation</title>
+    <title>Nool — TEST V29 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -2438,6 +2438,31 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
   #stats-secondary-row #lang-podium { min-height:0 !important; height:140px !important; }
   #stats-secondary-row #author-podium { max-height:165px !important; overflow:hidden !important; }
   #reading-pace-card .reading-chart-wrap { height:clamp(240px,25vw,320px) !important; min-height:0 !important; }
+}
+
+/* V29 — iPad : huit cartes strictement de même hauteur, sans étirement par le contenu. */
+@media (hover:none) and (pointer:coarse) and (min-width:768px) and (max-width:1400px) {
+  #stats-cards-row > .grid:first-child,
+  #stats-secondary-row {
+    grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+    grid-template-rows:220px !important;
+    grid-auto-rows:220px !important;
+    align-items:stretch !important;
+  }
+  #stats-cards-row > .grid:first-child > .stat-card,
+  #stats-secondary-row > .stat-card {
+    height:100% !important;
+    min-height:0 !important;
+    max-height:220px !important;
+    align-self:stretch !important;
+    overflow:hidden !important;
+  }
+  #stats-cards-row > .grid:first-child > .stat-card:nth-child(4) {
+    padding-top:40px !important;
+  }
+  #stats-cards-row #genre-podium { max-height:165px !important; overflow-y:auto !important; }
+  #stats-secondary-row #author-podium { max-height:175px !important; }
+  #stats-secondary-row #lang-podium { height:140px !important; }
 }
 </style>
 </head>
