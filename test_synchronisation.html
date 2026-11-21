@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V11 — Test synchronisation</title>
+    <title>Nool — TEST V12 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -1945,6 +1945,9 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
 .nool-fiche-pager select { max-width:95px; }
 .nool-fiche-pager option { color:#222; background:#fff; }
 .nool-fiche-pager .pager-total { opacity:.8; margin-right:6px; }
+/* V12 : pagination de la liste, en haut et en bas. */
+.nool-list-pager-wrap:not(:empty) { display:flex;justify-content:flex-end;margin:14px 0; }
+.nool-list-pager-wrap .nool-fiche-pager { flex-wrap:wrap; }
 </style>
 </head>
 <body>
@@ -2549,9 +2552,11 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
                     <div><h2 class="font-serif text-2xl font-black mb-1">Ma liste de livres</h2><p class="text-xs text-slate-400">Toutes les informations de tes livres dans un tableau filtrable.</p></div>
                     <div class="flex items-center gap-3"><button type="button" id="book-list-filter-toggle" aria-expanded="false" aria-controls="book-list-filters" onclick="const r=document.getElementById('book-list-filters'); r.hidden=!r.hidden; this.setAttribute('aria-expanded', String(!r.hidden)); this.querySelector('.filter-toggle-label').textContent=r.hidden?'Filtres':'Masquer les filtres';"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8v7l-4 2v-9z"/></svg><span class="filter-toggle-label">Filtres</span><span id="book-list-active-filters"></span></button><div id="book-list-count" class="book-list-count"></div></div>
                 </div>
+                <div id="book-list-top-pager" class="nool-list-pager-wrap" aria-live="polite"></div>
                 <div class="book-list-wrap"><table class="book-list-table" id="book-list-table"><thead>
                     <tr id="book-list-head"></tr><tr id="book-list-filters" hidden></tr>
                     </thead><tbody id="book-list-body"></tbody></table></div>
+                <div id="book-list-bottom-pager" class="nool-list-pager-wrap" aria-live="polite"></div>
                 <p class="text-[10px] text-slate-400 mt-3">Clique sur un titre de colonne pour trier (ascendant/descendant). Glisse les titres pour réorganiser les colonnes. Maintiens le clic gauche dans le vide autour du tableau ou sur une ligne non sélectionnée et trace un rectangle pour sélectionner des livres. Un simple clic dans le vide annule la sélection. Glisse une ligne sélectionnée pour déplacer le groupe. Le clic droit permet aussi de tracer un rectangle. Échap annule la sélection.</p>
             </section>
 
@@ -6261,7 +6266,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
             const uid=auth.currentUser?.uid;
             const st=uid && librarySyncStates.get(uid);
             let el=document.getElementById('nool-library-sync');
-            if(!el){el=document.createElement('button');el.id='nool-library-sync';el.type='button';el.setAttribute('aria-live','polite');el.style.cssText='position:fixed;top:78px;left:50%;transform:translateX(-50%);z-index:9999;border:1px solid #c5a059;border-radius:20px;padding:7px 13px;background:#222;color:#e8c884;font-size:12px;box-shadow:0 3px 12px #0003';document.body.appendChild(el);el.onclick=()=>{const st=librarySyncStates.get(auth.currentUser?.uid);if(st?.error&&!st.pending){if(st.message?.startsWith('Conflit')){alert(st.message+'\nLa modification est conservée dans ce navigateur. Ne supprime pas les données du site.');}else void syncLibraryWrite().catch(()=>{});}};}
+            if(!el){el=document.createElement('button');el.id='nool-library-sync';el.type='button';el.setAttribute('aria-live','polite');el.style.cssText='position:fixed;top:78px;left:50%;transform:translateX(-50%);z-index:9999;border:1px solid #c5a059;border-radius:20px;padding:7px 13px;background:#222;color:#e8c884;font-size:12px;box-shadow:0 3px 12px #0003';document.body.appendChild(el);el.onclick=()=>{const st=librarySyncStates.get(auth.currentUser?.uid);if(st?.error&&!st.pending){if(st.message?.startsWith('Conflit')){void noolShowConflicts(auth.currentUser?.uid);}else void syncLibraryWrite().catch(()=>{});}};}
             el.hidden=!st||(!st.pending&&!st.error);
             el.style.display=el.hidden?'none':'block';
             el.textContent=st?.pending?backupText('Synchronisation…','Syncing…'):backupText('Échec de sauvegarde — Réessayer','Save failed — Retry');
@@ -6456,6 +6461,65 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
                 }
             }
         }
+        // V12 : résolution explicite des journaux en conflit, sans écriture serveur.
+        async function noolShowConflicts(uid) {
+            if (!uid || uid !== auth.currentUser?.uid) return;
+            const prefix=noolJournalPrefix+uid+':';
+            const entries=[];
+            for(let i=0;i<localStorage.length;i++) {
+                const key=localStorage.key(i);
+                if(!key?.startsWith(prefix))continue;
+                try {
+                    const record=JSON.parse(localStorage.getItem(key));
+                    if(record?.uid===uid && Array.isArray(record.before) && Array.isArray(record.local) && Array.isArray(record.desired))entries.push({key,record});
+                }catch(e){console.warn('Journal illisible',e);}
+            }
+            if(!entries.length){
+                const st=syncState(uid);st.error=false;st.message='';paintLibrarySync();
+                alert('Aucune modification locale en attente.');return;
+            }
+            let remote;
+            try {remote=(await readTestBooks(uid)).map;}
+            catch(e){alert('Impossible de consulter la version Firebase. Vérifie ta connexion.');return;}
+            if(auth.currentUser?.uid!==uid)return;
+            const overlay=document.createElement('div');
+            overlay.style.cssText='position:fixed;inset:0;z-index:2147483646;background:#000b;display:flex;align-items:center;justify-content:center;padding:16px';
+            const panel=document.createElement('div');
+            panel.style.cssText='background:#242424;color:#f5eee1;border:1px solid #c5a059;border-radius:16px;padding:24px;max-width:640px;width:100%;max-height:85vh;overflow:auto;font:14px Inter,sans-serif';
+            const heading=document.createElement('h2');heading.textContent='Modifications locales en attente';heading.style.cssText='font-size:20px;font-weight:800;margin-bottom:12px';panel.append(heading);
+            const intro=document.createElement('p');intro.textContent='Compare les versions avant de choisir. Abandonner une modification efface uniquement sa copie en attente dans ce navigateur, jamais le livre dans Firebase.';intro.style.cssText='margin-bottom:16px;line-height:1.5';panel.append(intro);
+            const button=(label,action,danger=false)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.style.cssText='padding:10px 14px;margin:6px 6px 6px 0;border:1px solid #c5a059;border-radius:9px;color:'+(danger?'#fff':'#e8c884')+';background:'+(danger?'#783d35':'transparent')+';cursor:pointer';b.onclick=action;return b;};
+            for(const {key,record} of entries) {
+                const before=new Map(record.local), desired=new Map(record.desired);
+                const changes=[];
+                for(const [id,value] of desired)if(canonical(before.get(id))!==canonical(value))changes.push([id,value]);
+                for(const id of before.keys())if(!desired.has(id))changes.push([id,null]);
+                const section=document.createElement('section');section.style.cssText='border-top:1px solid #6c5a3a;padding:14px 0';
+                const title=document.createElement('p');title.textContent=`Copie locale : ${changes.length} livre(s) concerné(s)`;title.style.fontWeight='700';section.append(title);
+                for(const [id,value] of changes.slice(0,25)) {
+                    const server=remote.get(id);
+                    const row=document.createElement('p');row.style.cssText='font-size:12px;margin:8px 0;overflow-wrap:anywhere';
+                    const base=before.get(id)||{};
+                    const changedFields=value===null?['suppression']:Object.keys(value||{}).filter(field=>canonical(base[field])!==canonical(value[field]));
+                    const describe=(book,field)=>book===null?'(supprimé)':book===undefined?'(absent)':String(book?.[field]??'(vide)').slice(0,120);
+                    row.textContent=`Livre ${id} — ${value?.title||server?.title||'(sans titre)'} : ` + changedFields.slice(0,6).map(field=>`${field} : local « ${describe(value,field)} » / Firebase « ${describe(server,field)} »`).join(' ; ') + (changedFields.length>6?' …':'');
+                    section.append(row);
+                }
+                if(changes.length>25){const extra=document.createElement('p');extra.textContent=`… et ${changes.length-25} autres livres`;section.append(extra);}
+                section.append(button('Abandonner cette copie locale',()=>{
+                    if(auth.currentUser?.uid!==uid || syncState(uid).pending)return;
+                    if(!confirm('Abandonner définitivement cette modification locale ? Les livres Firebase ne seront pas modifiés.'))return;
+                    localStorage.removeItem(key);
+                    const remaining=Object.keys(localStorage).some(k=>k.startsWith(prefix));
+                    if(!remaining){const st=syncState(uid);st.error=false;st.message='';paintLibrarySync();}
+                    overlay.remove();
+                    if(remaining)void noolShowConflicts(uid);
+                },true));
+                panel.append(section);
+            }
+            panel.append(button('Fermer — conserver les copies',()=>overlay.remove()));
+            overlay.append(panel);document.body.append(overlay);
+        }
         function syncLibraryWrite() {
             const uid=currentUser?.uid;
             if(!uid||auth.currentUser?.uid!==uid||!testBaselines.has(uid))return Promise.reject(new Error('Bibliothèque non chargée'));
@@ -6563,6 +6627,17 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
             ['title','Nom'],['author','Auteur'],['genre','Genre'],['rating','Note'],
             ['year','Année de sortie'],['readYear','Année de lecture'],['lang','Langue'],['format','Format'],['pages','Pages'],['status','Statut']
         ];
+        const bookListPageSize = 50;
+        let bookListPage = 0;
+        window.resetBookListPage = () => { bookListPage = 0; renderBookList(); };
+        window.goBookListPage = value => { bookListPage = Math.max(0,Number(value)||0); renderBookList(); document.getElementById('section-liste')?.scrollIntoView({block:'start'}); };
+        window.changeBookListPage = delta => { goBookListPage(bookListPage+delta); };
+        function bookListPager(total) {
+            if (total <= bookListPageSize) return '';
+            const pages = Math.ceil(total/bookListPageSize);
+            const options=Array.from({length:pages},(_,i)=>`<option value="${i}" ${i===bookListPage?'selected':''}>${i+1} / ${pages}</option>`).join('');
+            return `<nav class="nool-fiche-pager" aria-label="Pagination de la liste"><span class="pager-total">${total} livres</span><button type="button" aria-label="Page précédente" onclick="changeBookListPage(-1)" ${bookListPage===0?'disabled':''}>‹</button><select aria-label="Page de la liste" onchange="goBookListPage(this.value)">${options}</select><button type="button" aria-label="Page suivante" onclick="changeBookListPage(1)" ${bookListPage===pages-1?'disabled':''}>›</button></nav>`;
+        }
         let bookListSort = { key: 'title', direction: 1 };
         let draggedBookId = null;
         let draggedColumn = null;
@@ -6628,8 +6703,8 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
                 const previous = Object.fromEntries([...filtersRow.querySelectorAll('[data-list-filter]')].map(input => [input.dataset.listFilter, input.value]));
                 filtersRow.innerHTML = order.map(key => {
                 const col = bookListColumns.find(c=>c[0]===key);
-                if(key==='status') return `<th data-col="status"><select class="book-list-filter" data-list-filter="status" aria-label="Filtrer le statut" onchange="renderBookList()"><option value="">Tous</option><option value="lu">Lu</option><option value="à lire">À lire</option><option value="abandonné">Abandonné</option></select></th>`;
-                return `<th data-col="${key}"><input class="book-list-filter" data-list-filter="${key}" placeholder="Filtrer" aria-label="Filtrer ${esc(col[1].toLowerCase())}" title="Filtrer ${esc(col[1].toLowerCase())}" oninput="renderBookList()"></th>`;
+                if(key==='status') return `<th data-col="status"><select class="book-list-filter" data-list-filter="status" aria-label="Filtrer le statut" onchange="resetBookListPage()"><option value="">Tous</option><option value="lu">Lu</option><option value="à lire">À lire</option><option value="abandonné">Abandonné</option></select></th>`;
+                return `<th data-col="${key}"><input class="book-list-filter" data-list-filter="${key}" placeholder="Filtrer" aria-label="Filtrer ${esc(col[1].toLowerCase())}" title="Filtrer ${esc(col[1].toLowerCase())}" oninput="resetBookListPage()"></th>`;
             }).join('');
                 filtersRow.querySelectorAll('[data-list-filter]').forEach(input => {
                     input.value = previous[input.dataset.listFilter] ?? window.bookListFilterValues?.[input.dataset.listFilter] ?? '';
@@ -6656,7 +6731,14 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
                 const cmp = numeric ? an-bn : collator.compare(String(av), String(bv));
                 return cmp * bookListSort.direction;
             });
-            body.innerHTML = rows.length ? rows.map(b => {
+            const pages = Math.max(1,Math.ceil(rows.length/bookListPageSize));
+            bookListPage = Math.min(bookListPage,pages-1);
+            const pager = bookListPager(rows.length);
+            for(const id of ['book-list-top-pager','book-list-bottom-pager']) {
+                const el=document.getElementById(id);if(el)el.innerHTML=pager;
+            }
+            const visibleRows = rows.slice(bookListPage*bookListPageSize,(bookListPage+1)*bookListPageSize);
+            body.innerHTML = rows.length ? visibleRows.map(b => {
                 const v=listValues.get(b), id=esc(b.id);
                 const cells = order.map(key => {
                     let value = v[key] === '' ? '—' : v[key];
@@ -6679,7 +6761,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
         window.sortBookList = key => {
             if (bookListSort.key===key) bookListSort.direction *= -1;
             else bookListSort={key,direction:1};
-            renderBookList();
+            bookListPage=0; renderBookList();
         };
         function bindBookListDrag() {
             const table=document.getElementById('book-list-table');
