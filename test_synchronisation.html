@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V42 — Test synchronisation</title>
+    <title>Nool — TEST V44 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -2846,6 +2846,77 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
     grid-row:4 !important;
     justify-self:end !important;
     min-width:0 !important;
+  }
+}
+
+/* V44 — iPad Grille : ajout à côté d’Import rapide, actions à gauche de la pagination. */
+@media (min-width:768px) and (max-width:1400px) and (pointer:coarse) {
+  html:has(#section-grille.active) #search-bar-container {
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) auto !important;
+    column-gap:12px !important;
+    row-gap:12px !important;
+    align-items:center !important;
+  }
+  html:has(#section-grille.active) #grid-action-line {
+    display:contents !important;
+  }
+  html:has(#section-grille.active) #bulk-import-btn {
+    grid-column:1 !important;
+    grid-row:3 !important;
+    justify-self:start !important;
+  }
+  html:has(#section-grille.active) #add-book-btn {display:none !important;}
+  html:has(#section-grille.active) #grid-mobile-add-book {
+    display:inline-flex !important;
+    grid-column:2 !important;
+    grid-row:3 !important;
+    justify-self:end !important;
+    align-self:center !important;
+    align-items:center !important;
+    background:#000 !important;
+    color:#fff !important;
+    border:1px solid #000 !important;
+    border-radius:999px !important;
+    padding:8px 12px !important;
+    min-height:32px !important;
+    font-size:10px !important;
+    font-weight:900 !important;
+    text-transform:uppercase !important;
+    white-space:nowrap !important;
+  }
+  html:has(#section-grille.active) #grid-shared-actions {
+    grid-column:1 !important;
+    grid-row:4 !important;
+    justify-self:start !important;
+    display:flex !important;
+    align-items:center !important;
+    gap:12px !important;
+    margin:0 !important;
+    flex-wrap:wrap !important;
+  }
+  html:has(#section-grille.active) #grid-top-pager {
+    grid-column:2 !important;
+    grid-row:4 !important;
+    justify-self:end !important;
+    align-self:center !important;
+    margin:0 !important;
+  }
+}
+
+/* V43 — iPhone : déplacer le bouton existant visuellement, sans doublon. */
+@media (max-width:767px) {
+  html:has(#section-grille.active) #add-book-btn { display:none !important; }
+  html:has(#section-grille.active) #grid-mobile-add-book {
+    background:#000 !important;
+    color:#fff !important;
+    border:1px solid #000 !important;
+    font-size:9px !important;
+    font-weight:900 !important;
+    text-transform:uppercase !important;
+    letter-spacing:.025em !important;
+    padding:8px 12px !important;
+    min-height:30px !important;
   }
 }
 </style>
@@ -7785,7 +7856,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
         }
 
         const dirtyViews = new Set();
-        const gridPageSize = 20;
+        const gridPageSize = 50;
         let gridPage = 0;
         window.changeGridPage = delta => {
             gridPage = Math.max(0, gridPage + delta);
