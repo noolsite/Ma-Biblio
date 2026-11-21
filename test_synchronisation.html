@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V26 — Test synchronisation</title>
+    <title>Nool — TEST V27 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -2352,6 +2352,39 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
   }
   #stats-secondary-row #author-podium { max-height:none !important; }
   #stats-secondary-row #lang-podium { min-height:0 !important; }
+}
+
+/* V27 — iPad : les quatre indicateurs de tête ont une hauteur commune.
+   Les dispositions du téléphone et du grand ordinateur sont conservées. */
+@media (hover:none) and (pointer:coarse) and (min-width:768px) and (max-width:1400px) {
+  #stats-cards-row > .grid:first-child {
+    display:grid !important;
+    grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+    align-items:stretch !important;
+    gap:clamp(10px,1.4vw,18px) !important;
+  }
+  #stats-cards-row > .grid:first-child > .stat-card {
+    box-sizing:border-box !important;
+    height:clamp(205px,16vw,240px) !important;
+    min-height:0 !important;
+    max-height:240px !important;
+    overflow:hidden !important;
+    padding-inline:clamp(10px,1.3vw,20px) !important;
+  }
+  #stats-cards-row > .grid:first-child > .stat-card:nth-child(4) {
+    padding-top:40px !important;
+    justify-content:flex-start !important;
+  }
+  #stats-cards-row #genre-podium {
+    width:100% !important;
+    max-height:calc(clamp(205px,16vw,240px) - 55px) !important;
+    overflow-y:auto !important;
+    margin-top:0 !important;
+  }
+  /* Fiches : conserver les proportions et la présentation desktop d'origine. */
+  #section-fiches .fiche-container { max-width:900px !important; padding:40px !important; }
+  #section-fiches .fiche-container .cover-box { width:200px !important; max-width:200px !important; }
+  #section-fiches .fiche-container > .flex.flex-col.md\:flex-row { gap:40px !important; }
 }
 </style>
 </head>
@@ -5940,6 +5973,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
             lastBookcaseClientWidth = bookcase.clientWidth;
             const naturalHeight = scaler.scrollHeight || scaler.offsetHeight;
             scaler.style.marginRight = '';
+            scaler.style.marginLeft = '';
             bookcase.classList.remove('bookcase-scroll');
             if (window.matchMedia('(max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px)').matches) {
                 // Téléphone : livres agrandis ; si l'étagère est plus large que l'écran, elle défile sur le côté
@@ -5950,6 +5984,11 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
                 if (maxRight * scale > availableWidth) {
                     scaler.style.marginRight = (maxRight * (scale - 1)) + 'px';
                     bookcase.classList.add('bookcase-scroll');
+                }
+                // iPad : centrer visuellement l'étagère lorsque sa largeur réduite
+                // est inférieure à l'espace disponible (sans modifier les positions des livres).
+                if (window.matchMedia('(min-width: 768px) and (hover: none) and (pointer: coarse) and (max-width: 1400px)').matches && maxRight * scale < availableWidth) {
+                    scaler.style.marginLeft = Math.max(0, (availableWidth - maxRight * scale) / 2) + 'px';
                 }
                 currentShelfScale = scale;
                 return;
