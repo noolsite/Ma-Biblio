@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V27 — Test synchronisation</title>
+    <title>Nool — TEST V28 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -2385,6 +2385,59 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
   #section-fiches .fiche-container { max-width:900px !important; padding:40px !important; }
   #section-fiches .fiche-container .cover-box { width:200px !important; max-width:200px !important; }
   #section-fiches .fiche-container > .flex.flex-col.md\:flex-row { gap:40px !important; }
+}
+
+/* V28 — Sur tablette uniquement, retrouver la disposition du tableau de bord ordinateur.
+   Le téléphone (<768px) et l'ordinateur non tactile restent inchangés. */
+@media (hover:none) and (pointer:coarse) and (min-width:768px) and (max-width:1400px) {
+  #stats-cards-row > .grid:first-child,
+  #stats-secondary-row {
+    display:grid !important;
+    grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+    grid-template-rows:auto !important;
+    gap:clamp(12px,1.5vw,20px) !important;
+    align-items:stretch !important;
+  }
+  #stats-cards-row > .grid:first-child > .stat-card,
+  #stats-secondary-row > .stat-card {
+    box-sizing:border-box !important;
+    grid-column:auto !important;
+    grid-row:auto !important;
+    height:clamp(205px,16vw,240px) !important;
+    min-height:0 !important;
+    max-height:none !important;
+    margin:0 !important;
+    overflow:hidden !important;
+    padding:clamp(14px,1.6vw,22px) !important;
+  }
+  #stats-cards-row > .grid:first-child > .stat-card:nth-child(4) {
+    padding-top:40px !important;
+  }
+  #stats-secondary-row > .stat-card:nth-child(1),
+  #stats-secondary-row > .stat-card:nth-child(3) {
+    display:flex !important;
+    flex-direction:column !important;
+    justify-content:center !important;
+    align-items:center !important;
+    gap:8px !important;
+  }
+  #stats-secondary-row > .stat-card:nth-child(1) > .section-label,
+  #stats-secondary-row > .stat-card:nth-child(3) > .section-label {
+    position:static !important;
+    transform:none !important;
+    width:auto !important;
+    margin:0 !important;
+  }
+  #stats-secondary-row #stat-dnf,
+  #stats-secondary-row #stat-pages { position:static !important; top:auto !important; margin:0 !important; }
+  #stats-secondary-row #stat-dnf-pct,
+  #stats-secondary-row #stat-pages + p {
+    position:static !important; top:auto !important; margin:0 !important;
+    padding:0 !important; border:0 !important;
+  }
+  #stats-secondary-row #lang-podium { min-height:0 !important; height:140px !important; }
+  #stats-secondary-row #author-podium { max-height:165px !important; overflow:hidden !important; }
+  #reading-pace-card .reading-chart-wrap { height:clamp(240px,25vw,320px) !important; min-height:0 !important; }
 }
 </style>
 </head>
@@ -7929,7 +7982,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
                 coverTooltip.style.top = `${Math.max(8, top)}px`;
             };
 
-            const mobilePace = window.matchMedia('(max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px)').matches;
+            const mobilePace = window.matchMedia('(max-width: 767px)').matches; // Barres uniquement sur téléphone ; courbe sur iPad et ordinateur.
             const mobileBarColors = counts.map((count, i) => count === Math.max(...counts) && count > 0 ? chartColor : hexToRgba(chartColor, 0.56));
             readingChart = new Chart(ctx, {
                 type: mobilePace ? 'bar' : 'line',
