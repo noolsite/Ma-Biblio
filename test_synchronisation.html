@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V23 — Test synchronisation</title>
+    <title>Nool — TEST V24 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -2252,6 +2252,50 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
   #nav-tabs { display:none !important; }
   #bottom-nav { display:flex !important; }
   #app-content { padding-bottom:calc(80px + env(safe-area-inset-bottom)); }
+}
+
+/* V24 — véritable palier tablette : la navigation reste en bas,
+   les composants prennent une taille intermédiaire selon la largeur. */
+@media (hover:none) and (pointer:coarse) and (min-width:768px) and (max-width:1400px) {
+  #bottom-nav { padding-inline:clamp(12px,2.5vw,32px) !important; }
+  #bottom-nav button { font-size:clamp(11px,1.1vw,14px) !important; min-height:60px; }
+  #bottom-nav button svg { width:clamp(24px,2.2vw,30px); height:clamp(24px,2.2vw,30px); }
+  #app-header > div { padding-inline:clamp(20px,3vw,42px) !important; }
+  #app-content > .max-w-6xl { max-width:1400px !important; padding-inline:clamp(22px,3.8vw,58px) !important; }
+
+  /* Bibliothèque : dos lisibles, rangées défilables sans miniaturisation. */
+  #bibliotheque-section .section-label { font-size:clamp(25px,2.8vw,36px) !important; }
+  #bibliotheque-section .flex.items-center.gap-3 > button { width:clamp(40px,4vw,50px) !important; height:clamp(40px,4vw,50px) !important; }
+  #shelf-phone-hint { font-size:clamp(11px,1.1vw,14px) !important; }
+  #bookcase-container { padding:clamp(14px,2vw,24px) !important; }
+
+  /* Grille : couvertures de taille tablette plutôt que trois géantes. */
+  #section-grille #grid-content { grid-template-columns:repeat(4,minmax(0,1fr)) !important; column-gap:clamp(14px,2vw,28px) !important; row-gap:clamp(20px,2.6vw,34px) !important; }
+  #section-grille .grid-thumb-title { font-size:clamp(12px,1.3vw,16px) !important; }
+  #section-grille .grid-item > .flex, #section-grille .grid-item > .flex .text-base { font-size:clamp(12px,1.15vw,15px) !important; line-height:1.35 !important; }
+
+  /* Stats : podiums et indicateurs sans étirement inutile. */
+  #stats-secondary-row { grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:clamp(14px,2vw,24px) !important; }
+  #stats-secondary-row > .stat-card { height:clamp(210px,23vw,285px) !important; min-height:0 !important; }
+  #stats-secondary-row > .stat-card .section-label { font-size:clamp(11px,1.15vw,14px) !important; }
+  #stats-secondary-row #stat-dnf, #stats-secondary-row #stat-pages { font-size:clamp(43px,5vw,65px) !important; }
+  #stats-secondary-row #author-podium { max-height:210px !important; }
+  #stats-secondary-row #lang-podium { height:auto !important; min-height:145px; }
+
+  /* Liste : titre et commandes sur deux lignes, tableau défilable. */
+  #section-liste > .flex:first-child { flex-direction:column !important; align-items:stretch !important; gap:14px !important; }
+  #section-liste #book-list-toolbar { width:100% !important; justify-content:flex-start !important; }
+  #section-liste #book-list-top-pager { margin-left:auto !important; }
+  #section-liste .book-list-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+
+  /* Fiches : carte centrée et contrôles confortables au toucher. */
+  #section-fiches .fiche-container { max-width:min(900px,100%) !important; margin-inline:auto !important; padding:clamp(24px,3vw,38px) !important; }
+  #section-fiches .fiche-container .cover-box { max-width:clamp(220px,26vw,300px) !important; }
+  #fiche-top-pager .nool-fiche-pager button, #fiche-top-pager .nool-fiche-pager select { min-height:40px !important; font-size:14px !important; padding:7px 11px !important; }
+  html:has(#section-fiches.active) #grid-select-toggle-btn, html:has(#section-fiches.active) #grid-shared-actions button:last-child { font-size:12px !important; }
+}
+@media (hover:none) and (pointer:coarse) and (min-width:1100px) and (max-width:1400px) {
+  #section-grille #grid-content { grid-template-columns:repeat(5,minmax(0,1fr)) !important; }
 }
 </style>
 </head>
@@ -5843,7 +5887,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
             bookcase.classList.remove('bookcase-scroll');
             if (window.matchMedia('(max-width: 767px), (hover: none) and (pointer: coarse) and (max-width: 1400px)').matches) {
                 // Téléphone : livres agrandis ; si l'étagère est plus large que l'écran, elle défile sur le côté
-                const scale = PHONE_MIN_SHELF_SCALE;
+                const scale = window.matchMedia('(min-width: 768px) and (hover: none) and (pointer: coarse)').matches ? 0.94 : PHONE_MIN_SHELF_SCALE;
                 scaler.style.transform = `scale(${scale})`;
                 scaler.style.width = maxRight + 'px';
                 bookcase.style.height = (naturalHeight * scale + 38) + 'px';
