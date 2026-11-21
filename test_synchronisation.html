@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V30 — Test synchronisation</title>
+    <title>Nool — TEST V31 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -2495,6 +2495,68 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
   #section-stats #genre-podium { max-height:155px !important; overflow-y:auto !important; }
   #section-stats #author-podium { max-height:165px !important; overflow:hidden !important; }
   #section-stats #lang-podium { height:140px !important; min-height:0 !important; }
+}
+
+/* V31 — iPad : titres en haut, contenu centré dans chaque carte de 220px.
+   La version téléphone (<768px) reste inchangée. */
+@media (min-width:768px) and (max-width:1199px) {
+  #section-stats #stats-cards-row > .grid:first-child > .stat-card,
+  #section-stats #stats-secondary-row > .stat-card {
+    display:flex !important;
+    flex-direction:column !important;
+    justify-content:center !important;
+    align-items:center !important;
+    padding:52px 12px 14px !important;
+    gap:0 !important;
+  }
+  /* Garder tous les titres à la même hauteur, les pictogrammes juste au-dessus. */
+  #section-stats #stats-cards-row .stat-card > .section-label,
+  #section-stats #stats-secondary-row > .stat-card > .section-label {
+    position:absolute !important;
+    top:19px !important;
+    left:8px !important;
+    right:8px !important;
+    width:auto !important;
+    margin:0 !important;
+  }
+  #section-stats #stats-cards-row .stat-card:has(> span.text-xl.mb-1) > .section-label,
+  #section-stats #stats-secondary-row > .stat-card:has(> span.text-xl.mb-1) > .section-label {
+    top:39px !important;
+  }
+  #section-stats #stats-cards-row .stat-card > span.text-xl.mb-1,
+  #section-stats #stats-secondary-row > .stat-card > span.text-xl.mb-1 {
+    top:9px !important;
+  }
+  /* Annuler les anciens décalages mobiles/tablette, responsables du déséquilibre. */
+  #section-stats #stats-cards-row .stat-card > :not(.section-label):not(span.text-xl.mb-1),
+  #section-stats #stats-secondary-row > .stat-card > :not(.section-label):not(span.text-xl.mb-1) {
+    translate:none !important;
+  }
+  #section-stats #stat-format,
+  #section-stats #lang-podium { transform:none !important; }
+  #section-stats #stat-format { width:100% !important; align-items:center !important; }
+  #section-stats #genre-podium {
+    width:100% !important;
+    max-height:140px !important;
+    margin:0 !important;
+    overflow-y:auto !important;
+  }
+  #section-stats #lang-podium {
+    width:100% !important;
+    height:126px !important;
+    min-height:0 !important;
+    margin:0 !important;
+    justify-content:center !important;
+  }
+  #section-stats #author-podium {
+    width:100% !important;
+    max-height:152px !important;
+    margin:0 !important;
+    overflow:hidden !important;
+  }
+  #section-stats #stats-secondary-row #author-podium .olympic-podium {
+    height:130px !important;
+  }
 }
 </style>
 </head>
