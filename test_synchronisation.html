@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V39 — Test synchronisation</title>
+    <title>Nool — TEST V41 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -2746,6 +2746,27 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
   html:has(#section-grille.active) #grid-shared-actions {gap:5px !important;flex-wrap:nowrap !important;}
 }
 
+/* V40 — iPhone Grille : pagination sur sa propre ligne pour éviter
+   tout chevauchement avec Réinitialiser, quelle que soit la largeur. */
+@media (max-width:767px) {
+  html:has(#section-grille.active) #search-bar-container {
+    grid-template-columns:minmax(0,1fr) !important;
+  }
+  html:has(#section-grille.active) #grid-action-line {
+    grid-column:1 / -1 !important;
+    grid-row:3 !important;
+    width:100% !important;
+    min-width:0 !important;
+    flex-wrap:wrap !important;
+  }
+  html:has(#section-grille.active) #grid-top-pager {
+    grid-column:1 / -1 !important;
+    grid-row:4 !important;
+    justify-self:end !important;
+    margin-top:0 !important;
+  }
+}
+
 /* V38 — Téléphone : éviter que les quatre commandes de la bibliothèque
    dépassent sur la droite. Titre et outils se répartissent sur deux lignes. */
 @media (max-width: 767px) {
@@ -2769,6 +2790,26 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
     max-width:100% !important;
     flex-wrap:nowrap !important;
   }
+}
+
+/* V41 — Liste sur téléphone : colonnes lisibles sans couper les mots.
+   Le tableau défile horizontalement, sans modifier tablette/ordinateur. */
+@media (max-width: 760px) {
+  #section-liste .book-list-wrap { overflow-x:auto !important; -webkit-overflow-scrolling:touch; }
+  #section-liste .book-list-table { min-width:1120px !important; width:1120px !important; table-layout:fixed; }
+  #section-liste .book-list-table th,
+  #section-liste .book-list-table td { overflow-wrap:normal !important; word-break:normal !important; }
+  #section-liste .list-chip { overflow-wrap:normal !important; word-break:normal !important; white-space:nowrap; }
+  #section-liste .book-list-table th[data-col="title"] { width:19% !important; }
+  #section-liste .book-list-table th[data-col="author"] { width:14% !important; }
+  #section-liste .book-list-table th[data-col="genre"] { width:11% !important; }
+  #section-liste .book-list-table th[data-col="rating"] { width:7% !important; }
+  #section-liste .book-list-table th[data-col="year"],
+  #section-liste .book-list-table th[data-col="readYear"] { width:10% !important; }
+  #section-liste .book-list-table th[data-col="lang"] { width:9% !important; }
+  #section-liste .book-list-table th[data-col="format"] { width:8% !important; }
+  #section-liste .book-list-table th[data-col="pages"] { width:6% !important; }
+  #section-liste .book-list-table th[data-col="status"] { width:6% !important; }
 }
 </style>
 </head>
