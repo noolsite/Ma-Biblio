@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V35 — Test synchronisation</title>
+    <title>Nool — TEST V37 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -2657,6 +2657,76 @@ html:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool
 html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool-fiche-pager select {
   color:#f2f0ea !important;
   -webkit-text-fill-color:#f2f0ea !important;
+}
+/* V36 — iPad : ne plus couper le nom du premier auteur du podium. */
+@media (min-width:768px) and (max-width:1199px) {
+  #section-stats #stats-secondary-row #author-podium {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  #section-stats #stats-secondary-row #author-podium .olympic-podium {
+    height: 158px !important;
+    overflow: visible !important;
+    align-items: flex-end !important;
+  }
+  #section-stats #stats-secondary-row #author-podium .olympic-step-name {
+    min-height: 34px;
+    max-height: 42px;
+  }
+}
+
+
+/* V37 — Fiches sur iPad : reprendre la composition ordinateur, sans toucher au téléphone. */
+@media (min-width:768px) and (max-width:1199px) {
+  #section-fiches .fiche-container {
+    box-sizing:border-box !important;
+    width:100% !important;
+    max-width:900px !important;
+    margin:0 auto 40px !important;
+    padding:40px !important;
+  }
+  /* Retour à gauche, actions et numéro à droite sur la même ligne. */
+  #section-fiches .fiche-container > .flex.items-center.justify-between {
+    display:flex !important;
+    flex-direction:row !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    flex-wrap:nowrap !important;
+    gap:12px !important;
+  }
+  #section-fiches .fiche-header-actions {
+    width:auto !important;
+    display:flex !important;
+    flex-wrap:nowrap !important;
+    align-items:center !important;
+    gap:clamp(5px,.8vw,12px) !important;
+    margin-left:auto !important;
+  }
+  #section-fiches .fiche-header-actions > button {
+    white-space:nowrap !important;
+    flex-shrink:0 !important;
+    padding:6px clamp(6px,.7vw,12px) !important;
+    font-size:clamp(8px,.8vw,10px) !important;
+  }
+  #section-fiches .fiche-header-actions .fiche-number { flex-shrink:0 !important; margin-left:0 !important; }
+  /* Couverture à gauche et texte à droite, comme sur ordinateur. */
+  #section-fiches .fiche-container > .flex.flex-col.md\:flex-row {
+    display:flex !important;
+    flex-direction:row !important;
+    align-items:flex-start !important;
+    gap:40px !important;
+  }
+  #section-fiches .fiche-container .cover-box {
+    width:200px !important;
+    max-width:200px !important;
+    min-width:200px !important;
+    margin:0 !important;
+    align-self:flex-start !important;
+  }
+  #section-fiches .fiche-container .fiche-title,
+  #section-fiches .fiche-container .fiche-author,
+  #section-fiches .fiche-container .fiche-saga-row { text-align:left !important; }
+  #section-fiches .fiche-container .fiche-title { font-size:32px !important; }
 }
 </style>
 </head>
