@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V18 — Test synchronisation</title>
+    <title>Nool — TEST V19 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -2134,6 +2134,78 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
   html:has(#section-fiches.active) #grid-shared-actions {gap:3px !important;}
   html:has(#section-fiches.active) #grid-select-toggle-btn,
   html:has(#section-fiches.active) #grid-shared-actions button:last-child {font-size:7px !important;padding-inline:4px !important;}
+}
+
+/* V19 — Mobile : actions lisibles et tableau de bord réorganisé. */
+@media (max-width:767px) {
+  /* Fiches : retrouver des libellés lisibles, sans chevauchement avec le pager. */
+  html:has(#section-fiches.active) #grid-shared-actions { gap:8px !important; }
+  html:has(#section-fiches.active) #grid-select-toggle-btn {
+    font-size:10px !important; padding:9px 10px !important;
+    letter-spacing:0 !important; line-height:1.2 !important;
+  }
+  html:has(#section-fiches.active) #grid-shared-actions button:last-child {
+    font-size:10px !important; padding:7px 0 !important;
+    letter-spacing:0 !important; line-height:1.2 !important;
+  }
+  html:has(#section-fiches.active) #fiche-top-pager .nool-fiche-pager { gap:2px !important; }
+  html:has(#section-fiches.active) #fiche-top-pager .nool-fiche-pager button,
+  html:has(#section-fiches.active) #fiche-top-pager .nool-fiche-pager select {
+    min-height:32px !important; padding:4px 5px !important; font-size:11px !important;
+  }
+  /* Stats : auteur en haut à gauche, langues en haut à droite.
+     Les deux petits indicateurs occupent la seconde rangée. */
+  #stats-secondary-row {
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
+    grid-template-rows:192px 142px !important;
+    gap:12px !important;
+    align-items:stretch !important;
+  }
+  #stats-secondary-row > .stat-card { min-width:0; margin:0 !important; }
+  #stats-secondary-row > .stat-card:nth-child(4) { grid-column:1; grid-row:1; }
+  #stats-secondary-row > .stat-card:nth-child(2) { grid-column:2; grid-row:1; }
+  #stats-secondary-row > .stat-card:nth-child(1) { grid-column:1; grid-row:2; }
+  #stats-secondary-row > .stat-card:nth-child(3) { grid-column:2; grid-row:2; }
+  #stats-secondary-row > .stat-card:nth-child(1),
+  #stats-secondary-row > .stat-card:nth-child(3) {
+    height:142px !important; min-height:142px !important;
+    display:flex !important; flex-direction:column !important;
+    align-items:center !important; justify-content:center !important;
+    gap:7px !important; padding:35px 8px 13px !important;
+    overflow:hidden !important;
+  }
+  #stats-secondary-row > .stat-card:nth-child(1) > .section-label,
+  #stats-secondary-row > .stat-card:nth-child(3) > .section-label {
+    position:absolute !important; top:15px !important;
+    left:5px !important; right:5px !important;
+    width:auto !important; min-height:0 !important;
+    font-size:clamp(8px,2.3vw,10px) !important;
+    letter-spacing:0 !important; line-height:1.25 !important;
+  }
+  #stats-secondary-row #stat-dnf,
+  #stats-secondary-row #stat-pages {
+    display:block !important; flex:none !important;
+    width:100% !important; margin:0 !important;
+    font-size:clamp(32px,8vw,44px) !important;
+    line-height:1.1 !important; text-align:center !important;
+  }
+  #stats-secondary-row #stat-dnf-pct,
+  #stats-secondary-row #stat-pages + p {
+    display:block !important; flex:none !important;
+    width:100% !important; margin:0 !important; padding:0 !important;
+    border:0 !important; font-size:clamp(8px,2.2vw,10px) !important;
+    letter-spacing:0 !important; line-height:1.25 !important;
+    color:var(--gold-accent) !important;
+  }
+}
+@media (max-width:375px) {
+  html:has(#section-fiches.active) #grid-select-toggle-btn {
+    font-size:9px !important; padding:8px 7px !important;
+  }
+  html:has(#section-fiches.active) #grid-shared-actions button:last-child {
+    font-size:9px !important; padding:6px 0 !important;
+  }
 }
 </style>
 </head>
