@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V33 — Test synchronisation</title>
+    <title>Nool — TEST V34 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -2614,6 +2614,34 @@ html:has(#section-grille.active) #grid-top-pager .nool-fiche-pager select {min-h
  html:has(#section-grille.active) #grid-shared-actions button:last-child {font-size:9px !important;letter-spacing:0 !important;}
  html:has(#section-grille.active) #grid-top-pager .nool-fiche-pager button,
  html:has(#section-grille.active) #grid-top-pager .nool-fiche-pager select {min-height:30px;padding:4px 5px;font-size:11px;}
+}
+
+/* V34 — Fiches : contraste de pagination identique à Liste et Grille. */
+html:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool-fiche-pager {
+  color:var(--gold-accent) !important;
+  opacity:1 !important;
+}
+html:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool-fiche-pager :is(button,select) {
+  color:var(--gold-accent) !important;
+  -webkit-text-fill-color:var(--gold-accent) !important;
+  border:1px solid var(--gold-accent) !important;
+  opacity:1 !important;
+  background:transparent !important;
+}
+html:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool-fiche-pager button:disabled {
+  opacity:.3 !important;
+}
+/* V34 — iPad : centrer le groupe nombre/légende « Pages lues », avec une respiration. */
+@media (hover:none) and (pointer:coarse) and (min-width:768px) and (max-width:1400px) {
+  #stats-secondary-row > .stat-card:has(> #stat-pages) {
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:center !important;
+    justify-content:center !important;
+    text-align:center !important;
+  }
+  #stats-secondary-row #stat-pages { margin-top:10px !important; }
+  #stats-secondary-row #stat-pages + p { margin-top:12px !important; }
 }
 </style>
 </head>
