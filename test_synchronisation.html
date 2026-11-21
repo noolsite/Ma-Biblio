@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V29 — Test synchronisation</title>
+    <title>Nool — TEST V30 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -2463,6 +2463,38 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
   #stats-cards-row #genre-podium { max-height:165px !important; overflow-y:auto !important; }
   #stats-secondary-row #author-podium { max-height:175px !important; }
   #stats-secondary-row #lang-podium { height:140px !important; }
+}
+
+/* V30 — iPad Safari peut déclarer un pointeur fin : ne pas conditionner
+   l’alignement des huit cartes à (hover:none)/(pointer:coarse). */
+@media (min-width:768px) and (max-width:1199px) {
+  #section-stats #stats-cards-row > .grid:first-child,
+  #section-stats #stats-secondary-row {
+    display:grid !important;
+    grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+    grid-template-rows:220px !important;
+    grid-auto-rows:220px !important;
+    align-items:stretch !important;
+    gap:clamp(12px,1.4vw,20px) !important;
+  }
+  #section-stats #stats-cards-row > .grid:first-child > .stat-card,
+  #section-stats #stats-secondary-row > .stat-card {
+    box-sizing:border-box !important;
+    grid-column:auto !important;
+    grid-row:auto !important;
+    height:220px !important;
+    min-height:220px !important;
+    max-height:220px !important;
+    align-self:stretch !important;
+    overflow:hidden !important;
+    margin:0 !important;
+  }
+  #section-stats #stats-cards-row > .grid:first-child > .stat-card:nth-child(4) {
+    padding-top:40px !important;
+  }
+  #section-stats #genre-podium { max-height:155px !important; overflow-y:auto !important; }
+  #section-stats #author-podium { max-height:165px !important; overflow:hidden !important; }
+  #section-stats #lang-podium { height:140px !important; min-height:0 !important; }
 }
 </style>
 </head>
