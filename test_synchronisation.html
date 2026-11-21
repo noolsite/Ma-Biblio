@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V10 — Test synchronisation</title>
+    <title>Nool — TEST V11 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -6261,11 +6261,11 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
             const uid=auth.currentUser?.uid;
             const st=uid && librarySyncStates.get(uid);
             let el=document.getElementById('nool-library-sync');
-            if(!el){el=document.createElement('button');el.id='nool-library-sync';el.type='button';el.setAttribute('aria-live','polite');el.style.cssText='position:fixed;top:78px;left:50%;transform:translateX(-50%);z-index:9999;border:1px solid #c5a059;border-radius:20px;padding:7px 13px;background:#222;color:#e8c884;font-size:12px;box-shadow:0 3px 12px #0003';document.body.appendChild(el);el.onclick=()=>{const st=librarySyncStates.get(auth.currentUser?.uid);if(st?.error&&!st.pending)void syncLibraryWrite().catch(()=>{});};}
+            if(!el){el=document.createElement('button');el.id='nool-library-sync';el.type='button';el.setAttribute('aria-live','polite');el.style.cssText='position:fixed;top:78px;left:50%;transform:translateX(-50%);z-index:9999;border:1px solid #c5a059;border-radius:20px;padding:7px 13px;background:#222;color:#e8c884;font-size:12px;box-shadow:0 3px 12px #0003';document.body.appendChild(el);el.onclick=()=>{const st=librarySyncStates.get(auth.currentUser?.uid);if(st?.error&&!st.pending){if(st.message?.startsWith('Conflit')){alert(st.message+'\nLa modification est conservée dans ce navigateur. Ne supprime pas les données du site.');}else void syncLibraryWrite().catch(()=>{});}};}
             el.hidden=!st||(!st.pending&&!st.error);
             el.style.display=el.hidden?'none':'block';
             el.textContent=st?.pending?backupText('Synchronisation…','Syncing…'):backupText('Échec de sauvegarde — Réessayer','Save failed — Retry');
-            el.disabled=!!st?.pending;el.title=st?.error?(st.message||''):''; if(st?.error&&!st.pending&&st.message?.startsWith('Conflit'))el.textContent=backupText('Conflit entre appareils — modifications non enregistrées','Device conflict — changes not saved');
+            el.disabled=!!st?.pending;el.title=st?.error?(st.message||''):''; if(st?.error&&!st.pending&&st.message?.startsWith('Conflit'))el.textContent=backupText('Conflit entre appareils — copie locale conservée','Device conflict — local copy retained');
         }
         const testMarker = '__nool_test_v1';
         const testBookRef = (uid,key) => doc(db,'users_libs',uid,'books',key);
@@ -6362,15 +6362,112 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
                 }
             }
         }
+        // V11 : journal durable des modifications de livres, isolé par compte et par onglet.
+        // Les entrées ne sont effacées qu'après confirmation du serveur.
+        const noolJournalPrefix = 'nool-v11-pending:';
+        const noolTabToken = generateUid();
+        const noolJournalKey = uid => noolJournalPrefix + uid + ':' + noolTabToken;
+        const noolJournalRevision = new Map();
+        function noolStorePending(uid, snapshot) {
+            const key = noolJournalKey(uid);
+            const revision = (noolJournalRevision.get(uid) || 0) + 1;
+            const baseline = testBaselines.get(uid), local = testLocalBaselines.get(uid);
+            if (!baseline || !local) throw new Error('Bibliothèque non chargée');
+            const payload = {
+                version: 1, uid, revision,
+                before: [...baseline.entries()],
+                local: [...local.entries()],
+                desired: [...testMap(JSON.parse(JSON.stringify(snapshot))).entries()]
+            };
+            try { localStorage.setItem(key, JSON.stringify(payload)); }
+            catch (e) { throw new Error('Sauvegarde locale impossible : espace insuffisant ou stockage désactivé. Ne ferme pas Nool.'); }
+            noolJournalRevision.set(uid, revision);
+            return {key, revision};
+        }
+        function noolClearPending(uid, ticket) {
+            if (noolJournalRevision.get(uid) !== ticket.revision) return;
+            try {
+                const raw = localStorage.getItem(ticket.key);
+                if (raw && JSON.parse(raw).revision === ticket.revision) localStorage.removeItem(ticket.key);
+            } catch (e) { console.warn('Journal local :', e); }
+        }
+        async function noolRecoverPending(uid) {
+            const prefix = noolJournalPrefix + uid + ':';
+            const keys = [];
+            for (let i=0; i<localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(prefix)) keys.push(key);
+            }
+            if (!keys.length) return;
+            for (const key of keys) {
+                let record;
+                try { record = JSON.parse(localStorage.getItem(key)); }
+                catch (e) { console.warn('Journal local illisible :', key); continue; }
+                if (!record || record.version !== 1 || record.uid !== uid ||
+                    !Array.isArray(record.before) || !Array.isArray(record.local) || !Array.isArray(record.desired)) continue;
+                try {
+                    const original = new Map(record.local);
+                    const wanted = new Map(record.desired);
+                    const oldRemote = new Map(record.before);
+                    const changes = new Map();
+                    for (const [id, value] of wanted) {
+                        if (canonical(original.get(id)) !== canonical(value)) changes.set(id, value);
+                    }
+                    for (const id of original.keys()) if (!wanted.has(id)) changes.set(id, null);
+                    if (!changes.size) { localStorage.removeItem(key); continue; }
+                    // Relecture serveur : ne jamais remplacer les changements indépendants
+                    // réalisés sur un autre appareil depuis la fermeture de l'onglet.
+                    const current = (await readTestBooks(uid)).map;
+                    const ops = [];
+                    for (const [id, desired] of changes) {
+                        const remote = current.get(id);
+                        const target = desired === null ? undefined : desired;
+                        if (canonical(remote) === canonical(target)) continue;
+                        if (canonical(remote) !== canonical(oldRemote.get(id)))
+                            throw new Error('Conflit : ce livre a été modifié ailleurs. Modification locale conservée.');
+                        ops.push({id, desired});
+                    }
+                    for (let start=0; start<ops.length; start+=100) {
+                        const group=ops.slice(start,start+100);
+                        await retryRestore(()=>runTransaction(db, async tx=>{
+                            const refs=group.map(op=>testBookRef(uid,op.id));
+                            const snaps=await Promise.all(refs.map(ref=>tx.get(ref)));
+                            for (let i=0; i<group.length; i++) {
+                                const op=group[i];
+                                const remote=snaps[i].exists()?snaps[i].data():undefined;
+                                const desired=op.desired===null?undefined:op.desired;
+                                if(canonical(remote)!==canonical(oldRemote.get(op.id)) && canonical(remote)!==canonical(desired))
+                                    throw new Error('Conflit : ce livre a été modifié ailleurs. Modification locale conservée.');
+                            }
+                            for (let i=0; i<group.length; i++) {
+                                const op=group[i];
+                                if(op.desired===null) tx.delete(refs[i]);
+                                else tx.set(refs[i],op.desired);
+                            }
+                        }),true);
+                    }
+                    localStorage.removeItem(key);
+                } catch(e) {
+                    const st=syncState(uid); st.error=true; st.message=e.message;
+                    paintLibrarySync();
+                    console.error('Récupération locale Nool',e);
+                    // Conserver le journal en cas de conflit ou de panne.
+                    break;
+                }
+            }
+        }
         function syncLibraryWrite() {
             const uid=currentUser?.uid;
             if(!uid||auth.currentUser?.uid!==uid||!testBaselines.has(uid))return Promise.reject(new Error('Bibliothèque non chargée'));
             const st=syncState(uid), seq=++st.seq;
             const snapshot=JSON.parse(JSON.stringify(library));
+            let ticket;
+            try { ticket=noolStorePending(uid,snapshot); }
+            catch(e) {st.error=true;st.message=e.message;paintLibrarySync();return Promise.reject(e);}
             st.pending++;paintLibrarySync();
             const job=(testQueues.get(uid)||Promise.resolve()).catch(()=>{}).then(()=>commitTestBooks(uid,snapshot));
             testQueues.set(uid,job);
-            return job.then(()=>{if(seq===st.seq)st.error=false;},err=>{if(seq===st.seq){st.error=true;st.message=err.message;}console.error('Nool sync',err);throw err;}).finally(()=>{st.pending--;paintLibrarySync();});
+            return job.then(()=>{noolClearPending(uid,ticket);if(seq===st.seq)st.error=false;},err=>{if(seq===st.seq){st.error=true;st.message=err.message;}console.error('Nool sync',err);throw err;}).finally(()=>{st.pending--;paintLibrarySync();});
         }
         window.addEventListener('online',()=>{const st=librarySyncStates.get(auth.currentUser?.uid);if(st?.error&&!st.pending&&!noolBackupBusy&&!st.message?.startsWith('Conflit'))void syncLibraryWrite().catch(()=>{});});
         function hasUnsavedLibrary(){const st=librarySyncStates.get(auth.currentUser?.uid);return !!(st&&(st.pending||st.error));}
@@ -6397,6 +6494,10 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
                     map=verified.map;
                 }
                 if(auth.currentUser?.uid!==uid)throw new Error('Account changed');
+                // Rejouer les écritures interrompues avant de construire l'interface.
+                await noolRecoverPending(uid);
+                if(auth.currentUser?.uid!==uid)throw new Error('Account changed');
+                map=(await readTestBooks(uid)).map;
                 testBaselines.set(uid,map);
                 library=testArray(map).map(b=>JSON.parse(JSON.stringify(b)));
                 testLocalBaselines.set(uid,testMap(JSON.parse(JSON.stringify(library))));
