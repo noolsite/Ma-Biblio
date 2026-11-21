@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V21 — Test synchronisation</title>
+    <title>Nool — TEST V22 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -7652,7 +7652,30 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
             return `rgba(${r}, ${g}, ${b}, ${alpha})`;
         }
 
+        // L'infobulle du graphique est fixée au body : masquer explicitement
+        // sur les interactions tactiles et changements de vue (Safari iPad/iPhone).
+        function hideReadingTooltip() {
+            const tip = document.getElementById('nool-reading-tooltip');
+            if (tip) tip.style.display = 'none';
+            if (readingChart?.tooltip) {
+                readingChart.tooltip.setActiveElements([], { x: 0, y: 0 });
+                readingChart.draw();
+            }
+        }
+        const readingCanvas = document.getElementById('readingChart');
+        readingCanvas?.addEventListener('pointerleave', hideReadingTooltip);
+        readingCanvas?.addEventListener('pointercancel', hideReadingTooltip);
+        document.addEventListener('pointerdown', event => {
+            if (!event.target.closest('#reading-pace-card')) hideReadingTooltip();
+        }, { passive: true });
+        window.addEventListener('scroll', hideReadingTooltip, { passive: true });
+        window.addEventListener('blur', hideReadingTooltip);
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) hideReadingTooltip();
+        });
+
         function updateChart(books, byYear = false) {
+            hideReadingTooltip();
             const ctx = document.getElementById('readingChart').getContext('2d');
             if(readingChart) readingChart.destroy();
             const chartColor = getComputedStyle(document.documentElement).getPropertyValue('--gold-accent').trim() || '#C5A059';
@@ -7696,6 +7719,10 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
             coverTooltip.setAttribute('role', 'status');
             document.body.appendChild(coverTooltip);
             const externalReadingTooltip = ({chart, tooltip}) => {
+                if (!document.getElementById('section-stats')?.classList.contains('active')) {
+                    coverTooltip.style.display = 'none';
+                    return;
+                }
                 if (!tooltip || tooltip.opacity === 0 || !tooltip.dataPoints?.length) {
                     coverTooltip.style.display = 'none';
                     return;
@@ -7970,6 +7997,7 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
         }
         window.addEventListener('resize', placeSharedFicheActions);
         window.showSection = (id, forceScrollTop = false) => {
+            hideReadingTooltip();
             if (gridSelectMode && !document.getElementById('section-' + id)?.classList.contains('active')) window.cancelGridSelectMode();
             if(forceScrollTop || (window.innerWidth <= 767 && id === 'fiches')) window.scrollTo({top: 0, behavior: 'instant'});
             document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
