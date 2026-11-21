@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V17 — Test synchronisation</title>
+    <title>Nool — TEST V18 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -2059,6 +2059,81 @@ html:has(#section-fiches.active) #grid-action-line:empty { display:none; }
     order:3;margin:0 !important;width:100%;font-size:9px !important;
     letter-spacing:.04em !important;line-height:1.3 !important;
   }
+}
+
+/* V18 — Mobile : ligne de commandes sans chevauchement. */
+@media (max-width:767px) {
+  html:has(#section-fiches.active) #search-bar-container {
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) auto;
+    align-items:center;
+    column-gap:8px;
+    row-gap:12px;
+  }
+  html:has(#section-fiches.active) #search-bar-container > * {margin-top:0 !important;min-width:0;}
+  html:has(#section-fiches.active) #grid-search-line,
+  html:has(#section-fiches.active) #grid-filter-options {grid-column:1 / -1;}
+  html:has(#section-fiches.active) #grid-action-line,
+  html:has(#section-fiches.active) #grid-action-line:has(+ #fiche-top-pager:not(:empty)) {
+    grid-column:1;grid-row:3;width:auto !important;min-width:0;overflow:visible;
+    margin:0 !important;
+  }
+  html:has(#section-fiches.active) #grid-shared-actions {gap:5px !important;flex-wrap:nowrap;min-width:0;}
+  html:has(#section-fiches.active) #grid-select-toggle-btn {
+    font-size:8px !important;padding:7px 7px !important;letter-spacing:0 !important;white-space:nowrap;
+  }
+  html:has(#section-fiches.active) #grid-shared-actions button:last-child {
+    font-size:8px !important;letter-spacing:0 !important;white-space:nowrap;
+  }
+  html:has(#section-fiches.active) #fiche-top-pager,
+  html:has(#section-fiches.active) #grid-action-line:has(+ #fiche-top-pager:not(:empty)) + #fiche-top-pager {
+    grid-column:2;grid-row:3;justify-self:end;align-self:center;
+    width:auto !important;max-width:none !important;min-height:0 !important;
+    margin:0 !important;
+  }
+  html:has(#section-fiches.active) #fiche-top-pager .nool-fiche-pager {gap:3px;white-space:nowrap;}
+  html:has(#section-fiches.active) #fiche-top-pager .nool-fiche-pager button,
+  html:has(#section-fiches.active) #fiche-top-pager .nool-fiche-pager select {min-height:30px;padding:4px 5px;font-size:11px;}
+
+  /* Statistiques : cartes typographiques sobres et symétriques. */
+  #stats-secondary-row > .stat-card:nth-child(1),
+  #stats-secondary-row > .stat-card:nth-child(3) {
+    display:grid !important;
+    grid-template-rows:auto 1fr auto !important;
+    align-items:center !important;justify-items:center !important;
+    align-content:stretch !important;
+    gap:0 !important;padding:18px 8px 19px !important;
+    text-align:center !important;
+  }
+  #stats-secondary-row > .stat-card:nth-child(1) > span:first-child,
+  #stats-secondary-row > .stat-card:nth-child(3) > span:first-child {display:none !important;}
+  #stats-secondary-row > .stat-card:nth-child(1) > .section-label,
+  #stats-secondary-row > .stat-card:nth-child(3) > .section-label {
+    grid-row:1;order:unset !important;min-height:0 !important;
+    margin:0 !important;padding:0 2px !important;
+    font-size:clamp(8px,2.35vw,10px) !important;line-height:1.35 !important;
+    letter-spacing:0 !important;white-space:normal;
+  }
+  #stats-secondary-row #stat-dnf,
+  #stats-secondary-row #stat-pages {
+    grid-row:2;order:unset !important;align-self:center !important;
+    font-size:clamp(36px,9vw,52px) !important;line-height:1 !important;
+    margin:0 !important;letter-spacing:-.045em;
+  }
+  #stats-secondary-row #stat-dnf-pct,
+  #stats-secondary-row #stat-pages + p {
+    grid-row:3;order:unset !important;
+    margin:0 !important;padding-top:11px !important;
+    border-top:1px solid color-mix(in srgb,var(--gold-accent) 22%,transparent);
+    font-size:clamp(8px,2.2vw,10px) !important;
+    letter-spacing:.035em !important;
+    color:var(--gold-accent) !important;
+  }
+}
+@media(max-width:375px) {
+  html:has(#section-fiches.active) #grid-shared-actions {gap:3px !important;}
+  html:has(#section-fiches.active) #grid-select-toggle-btn,
+  html:has(#section-fiches.active) #grid-shared-actions button:last-child {font-size:7px !important;padding-inline:4px !important;}
 }
 </style>
 </head>
