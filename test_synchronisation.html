@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V50 — Test synchronisation</title>
+    <title>Nool — TEST V51 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -6352,9 +6352,26 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
                 row.className = 'ms-item';
                 const cb = document.createElement('input');
                 cb.type = 'checkbox'; cb.checked = el._ms.sel.has(o.value);
+                // Double-clic (ou double-tap) : cocher toutes les valeurs sauf celle-ci.
+                // Un clic simple conserve le comportement normal de la case.
                 cb.onchange = () => {
-                    if (cb.checked) el._ms.sel.add(o.value); else el._ms.sel.delete(o.value);
-                    refreshMS(el.id); render();
+                    const now = Date.now();
+                    const isDouble = el._ms.lastTapValue === o.value && now - (el._ms.lastTapTime || 0) < 450;
+                    el._ms.lastTapValue = o.value;
+                    el._ms.lastTapTime = now;
+                    if (isDouble) {
+                        el._ms.sel.clear();
+                        opts.forEach(option => {
+                            if (option.value !== o.value) el._ms.sel.add(option.value);
+                        });
+                        el._ms.lastTapTime = 0;
+                        buildMSPanel(el); // Mettre à jour toutes les coches immédiatement.
+                    } else {
+                        if (cb.checked) el._ms.sel.add(o.value);
+                        else el._ms.sel.delete(o.value);
+                    }
+                    refreshMS(el.id);
+                    render();
                 };
                 const txt = document.createElement('span');
                 txt.textContent = o.textContent.trim();
