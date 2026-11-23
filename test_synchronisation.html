@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V47 — Test synchronisation</title>
+    <title>Nool — TEST V49 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -2952,6 +2952,18 @@ html:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool
   -webkit-text-fill-color:var(--gold-accent) !important;
   border:1px solid color-mix(in srgb,var(--gold-accent) 35%,transparent) !important;
 }
+/* V48 — Pagination Fiches : chiffres, flèches et contours dorés, comme demandé. */
+html:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool-fiche-pager :is(button,select) {
+  color:var(--gold-accent) !important;
+  -webkit-text-fill-color:var(--gold-accent) !important;
+  border:1px solid var(--gold-accent) !important;
+  background:transparent !important;
+}
+html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool-fiche-pager select {
+  color:var(--gold-accent) !important;
+  -webkit-text-fill-color:var(--gold-accent) !important;
+  color-scheme:dark;
+}
 </style>
 </head>
 <body>
@@ -3453,7 +3465,7 @@ html:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool
                     </div>
 
                     <div id="best-book-card" class="flex-1 w-full invisible">
-                        <div id="best-book-banner" class="best-book-banner rounded-2xl p-4 shadow-sm flex items-center gap-4 h-[58px] w-full">
+                        <div id="best-book-banner" role="button" tabindex="0" aria-label="Ouvrir la fiche du livre mis en avant" class="best-book-banner rounded-2xl p-4 shadow-sm flex items-center gap-4 h-[58px] w-full">
                             <div class="best-book-thumb-wrap w-8 h-11 bg-white rounded shadow-sm overflow-hidden shrink-0 flex items-center justify-center">
                                 <img id="best-book-img" src="" class="w-full h-full object-cover hidden">
                                 <span id="best-book-fallback" class="best-book-fallback text-sm font-black">👑</span>
@@ -8101,6 +8113,15 @@ html:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool
             const bestBookCard = document.getElementById('best-book-card');
             if (bestBook) {
                 bestBookCard.classList.remove('invisible');
+                const bestBookBanner = document.getElementById('best-book-banner');
+                bestBookBanner.style.cursor = 'pointer';
+                bestBookBanner.onclick = () => jumpToFiche(bestBook.id);
+                bestBookBanner.onkeydown = (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        jumpToFiche(bestBook.id);
+                    }
+                };
                 document.getElementById('best-book-title').innerText = bestBook.title;
                 document.getElementById('best-book-author').innerText = bestBook.author || 'AUTEUR INCONNU';
                 const imgEl = document.getElementById('best-book-img');
@@ -8115,6 +8136,9 @@ html:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool
                 }
             } else {
                 bestBookCard.classList.add('invisible');
+                const bestBookBanner = document.getElementById('best-book-banner');
+                bestBookBanner.onclick = null;
+                bestBookBanner.onkeydown = null;
             }
 
             const genreCounts = {};
