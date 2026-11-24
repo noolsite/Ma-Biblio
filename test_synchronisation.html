@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V54 — Test synchronisation</title>
+    <title>Nool — TEST V57 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -9090,10 +9090,44 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
                 });
             } catch(e) { return []; }
         }
+        // V57 : catalogue Hardcover via le Worker authentifié.
+        async function searchHardcover(query, author = '') {
+            const user = auth.currentUser;
+            if (!user) return [];
+            try {
+                const token = await user.getIdToken();
+                const url = new URL('https://nool-hardcover.nool-book-site.workers.dev/');
+                url.searchParams.set('q', isbnQuery(query) || [query, author].filter(Boolean).join(' ').slice(0,150));
+                const response = await fetch(url, {headers:{Authorization:'Bearer '+token}, signal:AbortSignal.timeout(10000)});
+                if (!response.ok || auth.currentUser?.uid !== user.uid) return [];
+                const data = await response.json();
+                const hits = data.data?.search?.results?.hits;
+                if (!Array.isArray(hits)) return [];
+                return hits.flatMap(({document:d}) => {
+                    if (!d || typeof d.title !== 'string') return [];
+                    const strings = a => Array.isArray(a) ? a.filter(x=>typeof x==='string') : [];
+                    const names = strings(d.author_names);
+                    const name = names.join(', ') || (Array.isArray(d.contributions) ? d.contributions.map(c=>c?.author?.name).filter(x=>typeof x==='string').join(', ') : '');
+                    const aliases = strings(d.alternative_titles);
+                    const cover = typeof d.image?.url === 'string' && d.image.url.startsWith('https://assets.hardcover.app/') ? d.image.url : '';
+                    const year = String(d.release_year || d.release_date || '').match(/^\d{4}/)?.[0] || '';
+                    const isbns = strings(d.isbns);
+                    return [{title:d.title,author:name,aliases,cover,thumb:cover,year,originalYear:year,isbns,lang:'',pages:0,genre:literaryGenres(strings(d.genres)),summary:typeof d.description==='string'?d.description:'',summarySource:'hardcover'}];
+                });
+            } catch(e) { return []; }
+        }
+        function searchLanguage(q, books) {
+            const n = normalizeTitle(q);
+            if (/\b(le|la|les|des|du|une|soeurs|tome|aux)\b/.test(n)) return 'fr';
+            if (/\b(the|of|to|my|and|with|your|heart)\b/.test(n)) return 'en';
+            const exact = books.filter(b=>normalizeTitle(b.title)===n && ['fr','en'].includes(b.lang));
+            const langs = new Set(exact.map(b=>b.lang));
+            return langs.size===1 ? exact[0].lang : '';
+        }
         async function combinedBookSearch(query, author = '') {
             const isbn = isbnQuery(query);
             const corrected = isbn ? query : normalizeTitle(query).replace(/\bsepts\b/g, 'sept');
-            const [ol, gb, wd, bnf] = await Promise.all([searchOpenLibrary(corrected, author), searchGoogleBooks(corrected, author), searchWikidataBooks(corrected, author), searchBnF(corrected, author)]);
+            const [ol, gb, wd, bnf, hc] = await Promise.all([searchOpenLibrary(corrected, author), searchGoogleBooks(corrected, author), searchWikidataBooks(corrected, author), searchBnF(corrected, author), searchHardcover(query.replace(/\bsepts\b/gi, "sept"), author)]);
             if (!isbn && ![...ol,...gb,...bnf].some(b => titleSimilarity(corrected,b.title) >= 0.65)) {
                 const extra = await searchGoogleBooks(query, author, true);
                 gb.push(...extra);
@@ -9104,7 +9138,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
                 const work = ol.find(x=>sameBook(b,x) && x.year);
                 if (work) { b.originalYear=work.year; b.year=work.year; }
             }
-            const all = [...bnf, ...ol, ...gb, ...wd].map(verifiedBookMetadata);
+            const all = [...bnf, ...ol, ...gb, ...wd, ...hc].map(verifiedBookMetadata);
             for (const b of all) {
                 const peers = all.filter(x => sameBook(b,x));
                 b.genre = literaryGenres([b.genre, ...peers.map(x => x.genre)]);
@@ -9119,15 +9153,17 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
                 if (match) { w.cover=match.cover; w.thumb=match.thumb; w.pages=match.pages; w.genre=literaryGenres([w.genre,match.genre]); w.summary=match.summary; w.lang=match.lang; w.publisher=match.publisher; }
             }
             all.forEach(verifiedBookMetadata);
+            const preferredLang = searchLanguage(query, all);
+            const similarity = b => Math.max(titleSimilarity(corrected,b.title), ...(b.aliases || []).map(t=>titleSimilarity(corrected,t)*0.92));
             const score = b => {
-                const sim = isbn ? 1 : titleSimilarity(corrected, b.title);
-                return sim * 100 + (author ? (authorMatches(author,[b.author]) ? 15 : -35) : 0) + (b.lang === 'fr' ? 9 : 0) + (b.cover ? 8 : 0) + (b.summary ? 2 : 0) + (b.pages ? 1 : 0);
+                const sim = isbn ? 1 : similarity(b);
+                return sim * 100 + (author ? (authorMatches(author,[b.author]) ? 15 : -35) : 0) + (preferredLang && b.lang === preferredLang ? 14 : 0) + (b.cover ? 8 : 0) + (b.summary ? 2 : 0) + (b.pages ? 1 : 0);
             };
-            const ranked = all.filter(b => isbn ? (b.isbns || []).includes(isbn) : titleSimilarity(corrected,b.title) >= 0.25).sort((a,b) => score(b)-score(a));
+            const ranked = all.filter(b => isbn ? (b.isbns || []).includes(isbn) : similarity(b) >= 0.45).sort((a,b) => score(b)-score(a));
             const groups = [];
             for (const b of ranked) {
                 const peer = groups.find(x => sameBook(x,b) || (x.isbns || []).some(i => (b.isbns || []).includes(i)));
-                if (!peer) { groups.push(b); continue; }
+                if (!peer || (peer.lang && b.lang && peer.lang !== b.lang)) { groups.push(b); continue; }
                 const exactEdition = (peer.isbns || []).some(i => (b.isbns || []).includes(i));
                 if (!peer.cover && b.cover && exactEdition) { peer.cover=b.cover; peer.thumb=b.thumb || b.cover; }
                 if (!peer.summary && b.summary && peer.lang === b.lang) peer.summary=b.summary;
@@ -9153,12 +9189,12 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             if (titleSearchCache.has(cacheKey)) { renderSuggestions(titleSearchCache.get(cacheKey), query, dropdown); return; }
             titleSearchTimeout = setTimeout(async () => {
                 if (!current()) return;
-                dropdown.innerHTML = '<p class="p-3 text-[11px] text-slate-400 italic">Recherche BnF, Google Books, Open Library et Wikidata...</p>';
+                dropdown.innerHTML = '<p class="p-3 text-[11px] text-slate-400 italic">Recherche Hardcover, BnF, Google Books, Open Library et Wikidata...</p>';
                 dropdown.classList.remove('hidden');
                 const results = await combinedBookSearch(query, author);
                 if (results.length) titleSearchCache.set(cacheKey, results);
                 if (current()) renderSuggestions(results, query, dropdown);
-            }, 400);
+            }, 750);
         };
 
         // Un nombre de pages n'est retenu que s'il est plausible (évite les 0, les extraits, les erreurs de base de données)
@@ -9173,8 +9209,9 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
                 const response = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(isbnQuery(query) ? "isbn:" + isbnQuery(query) : (query + (author ? " " + author : "")))}&fields=${fields}&limit=35`, {signal:AbortSignal.timeout(8000)});
                 const data = await response.json();
                 return (data.docs || []).map(doc => {
-                    const frenchEdition = doc.editions?.docs?.find(e => e.cover_i && e.language?.includes('fre'));
-                    const coverId = frenchEdition?.cover_i || doc.cover_i;
+                    const preferred = searchLanguage(query, []);
+                    const edition = preferred && doc.editions?.docs?.find(e => e.cover_i && e.language?.includes(preferred === 'en' ? 'eng' : 'fre'));
+                    const coverId = edition?.cover_i || doc.cover_i;
                     return {
                         title: doc.title || query,
                         author: doc.author_name?.join(', ') || '',
@@ -9185,7 +9222,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
                         summarySource: 'openlibrary',
                         olKey: doc.key,
                         pages: sanePages(doc.number_of_pages_median),
-                        hasFrenchEdition: !!frenchEdition, lang: frenchEdition ? 'fr' : '', isbns: doc.isbn || []
+                        hasFrenchEdition: !!edition && preferred === 'fr', lang: edition ? preferred : '', isbns: doc.isbn || []
                     };
                 }).sort((a, b) => (b.hasFrenchEdition ? 1 : 0) - (a.hasFrenchEdition ? 1 : 0));
             } catch (e) { return []; }
@@ -9580,8 +9617,8 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
                     ${b.thumb ? `<img src="${suggestionText(b.thumb)}" class="w-8 h-11 object-cover rounded shadow-sm shrink-0" onerror="this.style.visibility='hidden'">` : '<div class="w-8 h-11 bg-slate-100 rounded shrink-0"></div>'}
                     <div class="min-w-0">
                         <p class="text-xs font-bold truncate">${suggestionText(b.title)}</p>
-                        <p class="text-[10px] text-slate-400 truncate">${b.hasFrenchEdition || b.lang === 'fr' ? '🇫🇷 ' : ''}${suggestionText(b.author || 'Auteur inconnu')}${b.year ? ' · ' + suggestionText(b.year) : ''}</p>
-                        <p class="text-[10px] text-slate-400">${suggestionText([b.originalYear ? 'Parution originale ' + b.originalYear : '', b.editionYear ? 'Édition ' + b.editionYear : '', b.publisher, b.pages ? b.pages + ' p.' : '', b.lang ? b.lang.toUpperCase() : '', b.summarySource === 'bnf' ? 'BnF' : b.summarySource === 'wikidata' ? 'Wikidata' : b.summarySource === 'googlebooks' ? 'Google Books' : 'Open Library'].filter(Boolean).join(' · '))}</p>
+                        <p class="text-[10px] text-slate-400 truncate">${b.lang === 'en' ? '🇬🇧 ' : b.hasFrenchEdition || b.lang === 'fr' ? '🇫🇷 ' : ''}${suggestionText(b.author || 'Auteur inconnu')}${b.year ? ' · ' + suggestionText(b.year) : ''}</p>
+                        <p class="text-[10px] text-slate-400">${suggestionText([b.originalYear ? 'Parution originale ' + b.originalYear : '', b.editionYear ? 'Édition ' + b.editionYear : '', b.publisher, b.pages ? b.pages + ' p.' : '', b.lang ? b.lang.toUpperCase() : '', b.summarySource === 'hardcover' ? 'Hardcover' : b.summarySource === 'bnf' ? 'BnF' : b.summarySource === 'wikidata' ? 'Wikidata' : b.summarySource === 'googlebooks' ? 'Google Books' : 'Open Library'].filter(Boolean).join(' · '))}</p>
                     </div>
                 </div>`).join('');
             if (!expanded && items.length > 5) {
