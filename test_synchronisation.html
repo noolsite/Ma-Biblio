@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V52 — Test synchronisation</title>
+    <title>Nool — TEST V54 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -2993,6 +2993,10 @@ html:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool
 }
 html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) .nool-fiche-pager select { color-scheme:dark !important; }
 </style>
+<style>
+#book-list-reset[hidden] { display:none !important; }
+#section-liste #book-list-toolbar { flex-wrap:wrap; }
+</style>
 </head>
 <body>
 
@@ -3597,7 +3601,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             <section id="section-liste" class="view-section">
                 <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5">
                     <div><h2 class="font-serif text-2xl font-black mb-1">Ma liste de livres</h2><p class="text-xs text-slate-400">Toutes les informations de tes livres dans un tableau filtrable.</p></div>
-                    <div id="book-list-toolbar" class="flex items-center gap-3"><button type="button" id="book-list-filter-toggle" aria-expanded="false" aria-controls="book-list-filters" onclick="const r=document.getElementById('book-list-filters'); r.hidden=!r.hidden; this.setAttribute('aria-expanded', String(!r.hidden)); this.querySelector('.filter-toggle-label').textContent=r.hidden?'Filtres':'Masquer les filtres';"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8v7l-4 2v-9z"/></svg><span class="filter-toggle-label">Filtres</span><span id="book-list-active-filters"></span></button><div id="book-list-count" class="book-list-count"></div><div id="book-list-top-pager" class="nool-list-pager-wrap" aria-live="polite"></div></div>
+                    <div id="book-list-toolbar" class="flex items-center gap-3"><button type="button" id="book-list-filter-toggle" aria-expanded="false" aria-controls="book-list-filters" onclick="const r=document.getElementById('book-list-filters'); r.hidden=!r.hidden; document.getElementById('book-list-reset').hidden=r.hidden; this.setAttribute('aria-expanded', String(!r.hidden)); this.querySelector('.filter-toggle-label').textContent=r.hidden?'Filtres':'Masquer les filtres';"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8v7l-4 2v-9z"/></svg><span class="filter-toggle-label">Filtres</span><span id="book-list-active-filters"></span></button><button type="button" id="book-list-reset" hidden class="text-[9px] font-bold text-red-400 uppercase tracking-widest hover:underline" data-i18n="filters.reset" onclick="resetBookListFilters()" aria-label="Réinitialiser les filtres de la liste">Réinitialiser</button><div id="book-list-count" class="book-list-count"></div><div id="book-list-top-pager" class="nool-list-pager-wrap" aria-live="polite"></div></div>
                 </div>
                 <div class="book-list-wrap"><table class="book-list-table" id="book-list-table"><thead>
                     <tr id="book-list-head"></tr><tr id="book-list-filters" hidden></tr>
@@ -7728,6 +7732,12 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
         const bookListPageSize = 50;
         let bookListPage = 0;
         window.resetBookListPage = () => { bookListPage = 0; renderBookList(); };
+        window.resetBookListFilters = () => {
+            document.querySelectorAll('#book-list-filters [data-list-filter]').forEach(input => { input.value = ''; });
+            window.bookListFilterValues = {};
+            bookListPage = 0;
+            renderBookList();
+        };
         window.goBookListPage = value => { bookListPage = Math.max(0,Number(value)||0); renderBookList(); document.getElementById('section-liste')?.scrollIntoView({block:'start'}); };
         window.changeBookListPage = delta => { goBookListPage(bookListPage+delta); };
         function bookListPager(total) {
@@ -8952,7 +8962,14 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             document.getElementById('cover-candidates').innerHTML = '';
             document.getElementById('saga-list').innerHTML = [...new Set(library.filter(x => x.saga).map(x => x.saga))].sort()
                 .map(n => `<option value="${n.replace(/"/g, '&quot;')}">`).join('');
-            document.getElementById('edit-modal').classList.remove('hidden');
+            const modal = document.getElementById('edit-modal');
+            modal.classList.remove('hidden');
+            const panel = modal.firstElementChild;
+            modal.scrollTop = 0;
+            if (panel) panel.scrollTop = 0;
+            requestAnimationFrame(() => {
+                if (!modal.classList.contains('hidden') && panel) panel.scrollTop = 0;
+            });
         };
         window.closeModal = () => document.getElementById('edit-modal').classList.add('hidden');
         window.resetFilters = () => { gridPage = 0; fichePage = 0; document.getElementById('search-input').value = ""; ['filter-rating','filter-genre','filter-format','filter-language','filter-author','filter-month','filter-year-grid','filter-special'].forEach(clearMS); document.getElementById('filter-sort').value = "none"; render(); };
