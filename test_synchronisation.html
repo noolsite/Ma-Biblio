@@ -4578,8 +4578,8 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             } else {
                 container.innerHTML = genres.map(g => `
                     <div class="flex items-center justify-between gap-3 py-2 border-b border-slate-100 last:border-0">
-                        <span class="text-xs font-bold uppercase truncate">${g}</span>
-                        <input type="color" value="${genreColorOverrides[g] || genreColor(g)}" onchange="setGenreColor('${g.replace(/'/g, "\\'")}', this.value)" class="w-8 h-8 rounded-lg border border-slate-200 cursor-pointer p-0 shrink-0">
+                        <span class="text-xs font-bold uppercase truncate">${escapeBookHtml(g)}</span>
+                        <input type="color" value="${genreColor(g)}" data-genre="${escapeBookHtml(g)}" onchange="setGenreColor(this.dataset.genre, this.value)" class="w-8 h-8 rounded-lg border border-slate-200 cursor-pointer p-0 shrink-0">
                     </div>
                 `).join('');
             }
@@ -4588,7 +4588,8 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
         window.closeShelfSettings = () => document.getElementById('shelf-settings-modal').classList.add('hidden');
 
         window.setGenreColor = (genre, color) => {
-            genreColorOverrides[genre] = color;
+            if (!/^#[0-9a-f]{6}$/i.test(color)) return;
+            Object.defineProperty(genreColorOverrides, genre, { value: color, writable: true, enumerable: true, configurable: true });
             saveShelfSettings();
             renderShelf(getShelfBooks());
         };
@@ -5436,7 +5437,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
         function genreColor(genre) {
             genre = bookGenres(genre)[0];
             if (!genre) return null;
-            if (genreColorOverrides[genre]) return genreColorOverrides[genre];
+            if (/^#[0-9a-f]{6}$/i.test(genreColorOverrides[genre] || "")) return genreColorOverrides[genre];
             const match = GENRE_THEME_COLORS.find(([regex]) => regex.test(genre));
             if (match) return match[1];
             let hash = 0;
@@ -8211,7 +8212,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             document.getElementById('genre-podium').innerHTML = sortedGenres.map((g, i) => `
                 <div class="podium-item"><div class="flex items-center gap-3">
                 <span class="rank-badge" style="background:transparent; font-size: 20px;">${podiumMedals[i]}</span>
-                <span class="text-xs font-bold uppercase truncate w-24">${g[0]}</span></div>
+                <span class="text-xs font-bold uppercase truncate w-24">${escapeBookHtml(g[0])}</span></div>
                 <span class="text-[10px] font-black text-slate-300" style="white-space: nowrap; flex-shrink: 0; margin-left: 8px;">${g[1]} livre${g[1] > 1 ? 's' : ''}</span></div>
             `).join('') || '<p class="text-[10px] text-slate-400 text-center italic py-4">' + (isAllYears ? t('dash.noReportAll') : t('dash.noReportFor') + ' ' + yStatsF) + '</p>';
 
@@ -8247,7 +8248,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
                 const legend = sortedLangs.map((l, i) => `
                     <div class="donut-legend-row">
                         <span class="donut-legend-dot" style="background:${DONUT_PALETTE[i % DONUT_PALETTE.length]};"></span>
-                        <span class="truncate">${l[0]}</span>
+                        <span class="truncate">${escapeBookHtml(l[0])}</span>
                         <span class="text-slate-400 ml-auto pl-1">${Math.round((l[1] / langTotal) * 100)}%</span>
                     </div>
                 `).join('');
@@ -8277,7 +8278,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
                     const [name, count] = entry;
                     return `
                         <div class="olympic-step">
-                            <span class="olympic-step-name" title="${name}">${name}</span>
+                            <span class="olympic-step-name" title="${escapeBookHtml(name)}">${escapeBookHtml(name)}</span>
                             <span class="olympic-step-count">${count} livre${count > 1 ? 's' : ''}</span>
                             <div class="olympic-step-bar" style="height:${podiumHeights[rank]}px; background:${podiumBarColors[rank]};">${podiumMedalIcons[rank]}</div>
                         </div>`;
@@ -9316,9 +9317,9 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             const list = await fetchCoverCandidates(title, author);
             if (!list.length) { box.innerHTML = '<p class="text-[11px] text-slate-400 italic">Aucune autre couverture trouvée. Tu peux coller une URL d\'image (Amazon, Fnac, Goodreads...) dans le champ ci-dessus.</p>'; return; }
             box.innerHTML = list.map((c, i) => `
-                <button type="button" onclick="pickCoverCandidate(${i})" class="relative shrink-0 rounded-lg overflow-hidden border-2 border-transparent hover:border-yellow-500 transition-colors" title="${c.label || ''}">
-                    <img src="${c.thumb}" referrerpolicy="no-referrer" class="h-24 w-auto object-cover block" onerror="this.closest('button').remove()">
-                    ${c.label ? `<span class="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] font-black text-center">${c.label}</span>` : ''}
+                <button type="button" onclick="pickCoverCandidate(${i})" class="relative shrink-0 rounded-lg overflow-hidden border-2 border-transparent hover:border-yellow-500 transition-colors" title="${escapeBookHtml(c.label || '')}">
+                    <img src="${escapeBookHtml(c.thumb)}" referrerpolicy="no-referrer" class="h-24 w-auto object-cover block" onerror="this.closest('button').remove()">
+                    ${c.label ? `<span class="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] font-black text-center">${escapeBookHtml(c.label)}</span>` : ''}
                 </button>`).join('');
             window._coverCandidates = list;
         };
@@ -9672,8 +9673,8 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
 
                 results.insertAdjacentHTML('beforeend', `
                     <div class="flex items-center gap-2 py-1">
-                        ${slot.cover ? `<img src="${slot.cover}" class="w-5 h-7 object-cover rounded shadow-sm shrink-0">` : '<div class="w-5 h-7 bg-slate-100 rounded shrink-0"></div>'}
-                        <span class="truncate flex-1">${slot.title}</span>
+                        ${slot.cover ? `<img src="${escapeBookHtml(slot.cover)}" class="w-5 h-7 object-cover rounded shadow-sm shrink-0">` : '<div class="w-5 h-7 bg-slate-100 rounded shrink-0"></div>'}
+                        <span class="truncate flex-1">${escapeBookHtml(slot.title)}</span>
                         <span class="text-[10px] shrink-0">${match ? '✅' : '⚠️'}</span>
                     </div>
                 `);
@@ -9925,8 +9926,8 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
 
                 results.insertAdjacentHTML('beforeend', `
                     <div class="flex items-center gap-2 py-1">
-                        ${slot.cover ? `<img src="${slot.cover}" class="w-5 h-7 object-cover rounded shadow-sm shrink-0">` : '<div class="w-5 h-7 bg-slate-100 rounded shrink-0"></div>'}
-                        <span class="truncate flex-1">${slot.title}</span>
+                        ${slot.cover ? `<img src="${escapeBookHtml(slot.cover)}" class="w-5 h-7 object-cover rounded shadow-sm shrink-0">` : '<div class="w-5 h-7 bg-slate-100 rounded shrink-0"></div>'}
+                        <span class="truncate flex-1">${escapeBookHtml(slot.title)}</span>
                         <span class="text-[10px] shrink-0">${isUpdate ? '🔄' : (exclusiveShelf === 'to-read' ? '📌' : (exclusiveShelf === 'currently-reading' ? '📖' : '✅'))}</span>
                     </div>
                 `);
