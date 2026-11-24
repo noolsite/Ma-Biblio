@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V57 — Test synchronisation</title>
+    <title>Nool — TEST V58 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -9127,7 +9127,16 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
         async function combinedBookSearch(query, author = '') {
             const isbn = isbnQuery(query);
             const corrected = isbn ? query : normalizeTitle(query).replace(/\bsepts\b/g, 'sept');
-            const [ol, gb, wd, bnf, hc] = await Promise.all([searchOpenLibrary(corrected, author), searchGoogleBooks(corrected, author), searchWikidataBooks(corrected, author), searchBnF(corrected, author), searchHardcover(query.replace(/\bsepts\b/gi, "sept"), author)]);
+            // V58 : un auteur resté dans le formulaire ne doit pas bloquer le titre.
+            const searchSources = name => Promise.all([searchOpenLibrary(corrected, name), searchGoogleBooks(corrected, name), searchWikidataBooks(corrected, name), searchBnF(corrected, name), searchHardcover(query.replace(/\bsepts\b/gi, "sept"), name)]);
+            if (isbn) author = '';
+            let [ol, gb, wd, bnf, hc] = await searchSources(author);
+            const relevant = b => Math.max(titleSimilarity(corrected, b.title), ...(b.aliases || []).map(t => titleSimilarity(corrected, t))) >= 0.85;
+            if (!isbn && author && ![...ol, ...gb, ...wd, ...bnf, ...hc].some(b => relevant(b) && b.author && authorMatches(author, [b.author]))) {
+                author = '';
+                // Une seule relance, sans auteur ; les résultats initiaux non fiables sont écartés.
+                [ol, gb, wd, bnf, hc] = await searchSources('');
+            }
             if (!isbn && ![...ol,...gb,...bnf].some(b => titleSimilarity(corrected,b.title) >= 0.65)) {
                 const extra = await searchGoogleBooks(query, author, true);
                 gb.push(...extra);
