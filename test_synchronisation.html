@@ -9092,7 +9092,12 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
         }
         async function combinedBookSearch(query, author = '') {
             const isbn = isbnQuery(query);
-            const [ol, gb, wd, bnf] = await Promise.all([searchOpenLibrary(query, author), searchGoogleBooks(query, author), searchWikidataBooks(query, author), searchBnF(query, author)]);
+            const corrected = isbn ? query : normalizeTitle(query).replace(/\bsepts\b/g, 'sept');
+            const [ol, gb, wd, bnf] = await Promise.all([searchOpenLibrary(corrected, author), searchGoogleBooks(corrected, author), searchWikidataBooks(corrected, author), searchBnF(corrected, author)]);
+            if (!isbn && ![...ol,...gb,...bnf].some(b => titleSimilarity(corrected,b.title) >= 0.65)) {
+                const extra = await searchGoogleBooks(query, author, true);
+                gb.push(...extra);
+            }
             for (const b of bnf) {
                 const exact = [...gb,...ol].find(x=>x.cover && x.isbns?.some(i=>b.isbns.includes(i)));
                 if (exact) { b.cover=exact.cover; b.thumb=exact.thumb; b.summary ||= exact.summary; }
@@ -9115,16 +9120,26 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             }
             all.forEach(verifiedBookMetadata);
             const score = b => {
-                const sim = isbn ? ((b.isbns || []).includes(isbn) ? 1 : 0) : titleSimilarity(query, b.title);
-                return sim * 30 + (b.summarySource === 'bnf' ? 8 : 0) + (b.originalYear ? 6 : 0) + (author ? (authorMatches(author, [b.author]) ? 10 : -20) : 0) + (b.lang === 'fr' || b.hasFrenchEdition ? 4 : 0) + (b.cover ? 2 : 0) + (b.summary ? 1 : 0) + (b.pages ? 1 : 0);
+                const sim = isbn ? 1 : titleSimilarity(corrected, b.title);
+                return sim * 100 + (author ? (authorMatches(author,[b.author]) ? 15 : -35) : 0) + (b.lang === 'fr' ? 9 : 0) + (b.cover ? 8 : 0) + (b.summary ? 2 : 0) + (b.pages ? 1 : 0);
             };
-            const ranked = all.filter(b => !isbn || (b.isbns || []).includes(isbn)).sort((a,b) => score(b)-score(a));
-            const seen = new Set();
-            return ranked.filter(b => {
-                const k = [normalizeTitle(b.title), normalizeTitle(b.author), b.year, b.lang, b.publisher, b.pages].join('|');
-                if (seen.has(k)) return false;
-                seen.add(k); return true;
-            }).slice(0, 14);
+            const ranked = all.filter(b => isbn ? (b.isbns || []).includes(isbn) : titleSimilarity(corrected,b.title) >= 0.25).sort((a,b) => score(b)-score(a));
+            const groups = [];
+            for (const b of ranked) {
+                const peer = groups.find(x => sameBook(x,b) || (x.isbns || []).some(i => (b.isbns || []).includes(i)));
+                if (!peer) { groups.push(b); continue; }
+                const exactEdition = (peer.isbns || []).some(i => (b.isbns || []).includes(i));
+                if (!peer.cover && b.cover && exactEdition) { peer.cover=b.cover; peer.thumb=b.thumb || b.cover; }
+                if (!peer.summary && b.summary && peer.lang === b.lang) peer.summary=b.summary;
+            }
+            for (const b of groups) {
+                if (!b.thumb && b.cover) b.thumb=b.cover;
+                if (!b.cover && b.summarySource !== 'openlibrary') {
+                    const id = (b.isbns || []).find(i => /^(?:97[89]\d{10}|\d{9}[0-9X])$/.test(i));
+                    if (id) b.cover=b.thumb=`https://covers.openlibrary.org/b/isbn/${id}-M.jpg?default=false`;
+                }
+            }
+            return groups.slice(0, 30);
         }
         window.handleTitleInput = () => {
             clearTimeout(titleSearchTimeout);
@@ -9155,7 +9170,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
         async function searchOpenLibrary(query, author = '') {
             try {
                 const fields = 'key,title,author_name,cover_i,first_publish_year,subject,editions,editions.key,editions.cover_i,editions.language,editions.first_publish_year,number_of_pages_median,isbn,language';
-                const response = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(isbnQuery(query) ? "isbn:" + isbnQuery(query) : (query + (author ? " " + author : "")))}&fields=${fields}&limit=15`);
+                const response = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(isbnQuery(query) ? "isbn:" + isbnQuery(query) : (query + (author ? " " + author : "")))}&fields=${fields}&limit=35`, {signal:AbortSignal.timeout(8000)});
                 const data = await response.json();
                 return (data.docs || []).map(doc => {
                     const frenchEdition = doc.editions?.docs?.find(e => e.cover_i && e.language?.includes('fre'));
@@ -9176,9 +9191,9 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             } catch (e) { return []; }
         }
 
-        async function searchGoogleBooks(query, author = '') {
+        async function searchGoogleBooks(query, author = '', broad = false) {
             try {
-                let response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(isbnQuery(query) ? 'isbn:' + isbnQuery(query) : 'intitle:' + query + (author ? ' inauthor:' + author : ''))}&maxResults=20&printType=books&key=AIzaSyDz7Waj_AluvqFvKemy5QfA3NbYUN875po`);
+                let response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(isbnQuery(query) ? 'isbn:' + isbnQuery(query) : (broad ? query : 'intitle:' + query) + (author ? ' inauthor:' + author : ''))}&maxResults=40&printType=books&key=AIzaSyDz7Waj_AluvqFvKemy5QfA3NbYUN875po`);
                 if (!response.ok) { const q = isbnQuery(query) ? "isbn:" + isbnQuery(query) : query + " " + author; response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=20&printType=books`); }
                 if (!response.ok) return [];
                 const data = await response.json();
@@ -9553,22 +9568,29 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
         }
 
         function suggestionText(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-        function renderSuggestions(items, query, dropdown) {
+        function renderSuggestions(items, query, dropdown, expanded = false) {
             titleSuggestions = items;
             if (titleSuggestions.length === 0) {
                 dropdown.innerHTML = '<p class="p-3 text-[11px] text-slate-400 italic">Aucun résultat, tu peux saisir les infos à la main.</p>';
                 dropdown.classList.remove('hidden');
                 return;
             }
-            dropdown.innerHTML = titleSuggestions.map((b, i) => `
+            dropdown.innerHTML = titleSuggestions.slice(0, expanded ? 30 : 5).map((b, i) => `
                 <div onclick="selectTitleSuggestion(${i})" class="flex items-center gap-3 p-2.5 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-0">
-                    ${b.thumb ? `<img src="${suggestionText(b.thumb)}" class="w-8 h-11 object-cover rounded shadow-sm shrink-0">` : '<div class="w-8 h-11 bg-slate-100 rounded shrink-0"></div>'}
+                    ${b.thumb ? `<img src="${suggestionText(b.thumb)}" class="w-8 h-11 object-cover rounded shadow-sm shrink-0" onerror="this.style.visibility='hidden'">` : '<div class="w-8 h-11 bg-slate-100 rounded shrink-0"></div>'}
                     <div class="min-w-0">
                         <p class="text-xs font-bold truncate">${suggestionText(b.title)}</p>
                         <p class="text-[10px] text-slate-400 truncate">${b.hasFrenchEdition || b.lang === 'fr' ? '🇫🇷 ' : ''}${suggestionText(b.author || 'Auteur inconnu')}${b.year ? ' · ' + suggestionText(b.year) : ''}</p>
                         <p class="text-[10px] text-slate-400">${suggestionText([b.originalYear ? 'Parution originale ' + b.originalYear : '', b.editionYear ? 'Édition ' + b.editionYear : '', b.publisher, b.pages ? b.pages + ' p.' : '', b.lang ? b.lang.toUpperCase() : '', b.summarySource === 'bnf' ? 'BnF' : b.summarySource === 'wikidata' ? 'Wikidata' : b.summarySource === 'googlebooks' ? 'Google Books' : 'Open Library'].filter(Boolean).join(' · '))}</p>
                     </div>
                 </div>`).join('');
+            if (!expanded && items.length > 5) {
+                const more = document.createElement('button');
+                more.type = 'button'; more.className = 'w-full p-3 text-xs font-bold text-slate-500';
+                more.textContent = `Voir plus de résultats (${items.length - 5})`;
+                more.onclick = () => renderSuggestions(items, query, dropdown, true);
+                dropdown.appendChild(more);
+            }
             dropdown.classList.remove('hidden');
         }
 
