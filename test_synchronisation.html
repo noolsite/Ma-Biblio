@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V51 — Test synchronisation</title>
+    <title>Nool — TEST V52 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -6636,19 +6636,30 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
         // --- PSEUDO (unique) ---
         let currentPseudo = null;
 
+        function escapeBookHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
         async function claimPseudo(pseudo, uid) {
-            const key = pseudo.trim().toLowerCase();
+            const clean = pseudo.trim();
+            const key = clean.toLowerCase();
             const usernameRef = doc(db, "usernames", key);
+            const profileRef = doc(db, "user_profiles", uid);
             await runTransaction(db, async (transaction) => {
+                const profile = await transaction.get(profileRef);
                 const snap = await transaction.get(usernameRef);
-                if (snap.exists() && snap.data().uid !== uid) {
-                    throw new Error("TAKEN");
-                }
-                transaction.set(usernameRef, { uid, pseudo: pseudo.trim() });
+                const oldKey = String(profile.data()?.pseudo || '').trim().toLowerCase();
+                const oldRef = oldKey && oldKey !== key ? doc(db, "usernames", oldKey) : null;
+                const oldSnap = oldRef ? await transaction.get(oldRef) : null;
+                if (snap.exists() && snap.data().uid !== uid) throw new Error("TAKEN");
+                transaction.set(usernameRef, { uid, pseudo: clean });
+                transaction.set(profileRef, { pseudo: clean }, { merge: true });
+                if (oldSnap?.exists() && oldSnap.data().uid === uid) transaction.delete(oldRef);
             });
         }
 
         function validatePseudoFormat(pseudo) {
+            if (pseudo.length > 20) return "Le pseudo doit faire au maximum 20 caractères.";
             if (pseudo.length < 3) return "Le pseudo doit faire au moins 3 caractères.";
             if (!/^[a-zA-Z0-9_.-]+$/.test(pseudo)) return "Lettres, chiffres, points, tirets et underscores uniquement.";
             return null;
@@ -6659,11 +6670,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             if (formatError) { errorEl.innerText = formatError; errorEl.classList.remove('hidden'); return false; }
             try {
                 await claimPseudo(pseudo, currentUser.uid);
-                if (currentPseudo && currentPseudo.toLowerCase() !== pseudo.trim().toLowerCase()) {
-                    try { await deleteDoc(doc(db, "usernames", currentPseudo.toLowerCase())); } catch (e) {}
-                }
                 currentPseudo = pseudo.trim();
-                await setDoc(doc(db, "user_profiles", currentUser.uid), { pseudo: currentPseudo }, { merge: true });
                 if (!currentUser.displayName) document.getElementById('profile-name').innerText = currentPseudo;
                 if (successEl) { successEl.innerText = t("msg.pseudoSaved"); successEl.classList.remove('hidden'); }
                 return true;
@@ -8123,7 +8130,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             document.getElementById('my-favorites-row').innerHTML = myFavorites.map(b => `
                 <div data-book-id="${b.id}" class="shrink-0 w-20 cursor-grab" onclick="if (!this.parentElement.dataset.dragging) jumpToFiche(${b.id})" title="${(b.title || '').replace(/"/g, '&quot;')}">
                     <div class="w-20 h-28 rounded-lg overflow-hidden shadow-sm border border-slate-100 flex items-center justify-center bg-slate-50">
-                        ${b.cover ? `<img draggable="false" src="${b.cover}" referrerpolicy="no-referrer" class="w-full h-full object-cover">` : `<span class="text-[9px] font-bold text-center px-1 text-slate-400 uppercase leading-tight">${b.title}</span>`}
+                        ${b.cover ? `<img draggable="false" src="${escapeBookHtml(b.cover)}" referrerpolicy="no-referrer" class="w-full h-full object-cover">` : `<span class="text-[9px] font-bold text-center px-1 text-slate-400 uppercase leading-tight">${escapeBookHtml(b.title)}</span>`}
                     </div>
                 </div>
             `).join('');
@@ -8136,7 +8143,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             document.getElementById('my-wishlist-row').innerHTML = myWishlist.map(b => `
                 <div data-book-id="${b.id}" class="shrink-0 w-20 cursor-grab" onclick="if (!this.parentElement.dataset.dragging) jumpToFiche(${b.id})" title="${(b.title || '').replace(/"/g, '&quot;')}">
                     <div class="w-20 h-28 rounded-lg overflow-hidden shadow-sm border border-slate-100 flex items-center justify-center bg-slate-50">
-                        ${b.cover ? `<img draggable="false" src="${b.cover}" referrerpolicy="no-referrer" class="w-full h-full object-cover">` : `<span class="text-[9px] font-bold text-center px-1 text-slate-400 uppercase leading-tight">${b.title}</span>`}
+                        ${b.cover ? `<img draggable="false" src="${escapeBookHtml(b.cover)}" referrerpolicy="no-referrer" class="w-full h-full object-cover">` : `<span class="text-[9px] font-bold text-center px-1 text-slate-400 uppercase leading-tight">${escapeBookHtml(b.title)}</span>`}
                     </div>
                 </div>
             `).join('');
@@ -8282,7 +8289,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
                 <div class="grid-item ${gridSelectMode && selectedGridIds.has(b.id) ? 'grid-item-selected' : ''}" data-id="${b.id}" onclick="${gridSelectMode ? `toggleGridSelection(${b.id})` : `jumpToFiche(${b.id})`}">
                     <div class="grid-thumb relative">
                         ${gridSelectMode ? `<span class="grid-select-checkbox ${selectedGridIds.has(b.id) ? 'checked' : ''}">${selectedGridIds.has(b.id) ? '✓' : ''}</span>` : ''}
-                        ${b.cover ? `<img loading="lazy" decoding="async" src="${b.cover}" referrerpolicy="no-referrer" class="w-full h-full object-cover ${b.isDNF ? 'grayscale opacity-50' : (b.isToRead ? 'saturate-[.35] brightness-95' : '')}">` : `<div class="flex flex-col items-center justify-center text-center px-3 py-2 h-full w-full ${b.isDNF ? 'grayscale opacity-50' : (b.isToRead ? 'saturate-[.35] brightness-95' : '')}"><span class="grid-thumb-title font-serif font-black uppercase leading-tight text-[15px]">${b.title}</span><span class="mt-2 text-[10px] font-bold uppercase tracking-wide" style="color: var(--gold-accent);">${b.author || ''}</span></div>`}
+                        ${b.cover ? `<img loading="lazy" decoding="async" src="${escapeBookHtml(b.cover)}" referrerpolicy="no-referrer" class="w-full h-full object-cover ${b.isDNF ? 'grayscale opacity-50' : (b.isToRead ? 'saturate-[.35] brightness-95' : '')}">` : `<div class="flex flex-col items-center justify-center text-center px-3 py-2 h-full w-full ${b.isDNF ? 'grayscale opacity-50' : (b.isToRead ? 'saturate-[.35] brightness-95' : '')}"><span class="grid-thumb-title font-serif font-black uppercase leading-tight text-[15px]">${escapeBookHtml(b.title)}</span><span class="mt-2 text-[10px] font-bold uppercase tracking-wide" style="color: var(--gold-accent);">${escapeBookHtml(b.author || '')}</span></div>`}
                         ${b.isToRead ? `<div class="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden"><div class="absolute" style="width:150px; height:150px; border-radius:9999px; background: radial-gradient(circle, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 55%, transparent 75%);"></div><svg width="190" height="190" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="position:relative;"><rect x="14" y="6" width="36" height="6" rx="3" fill="var(--gold-accent)" opacity="0.9"/><rect x="14" y="52" width="36" height="6" rx="3" fill="var(--gold-accent)" opacity="0.9"/><path d="M20,12 L44,12 C44,20 38,29 33,32 C38,35 44,44 44,52 L20,52 C20,44 26,35 31,32 C26,29 20,20 20,12 Z" fill="var(--gold-accent)" opacity="0.9"/></svg></div>` : ''}
                         
                         <!-- Badge Favori -->
@@ -8353,34 +8360,34 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
                     </div>
                     <div class="flex flex-col md:flex-row gap-10">
                         <div class="cover-box shrink-0">
-                            ${book.cover ? `<img loading="lazy" decoding="async" src="${book.cover}" referrerpolicy="no-referrer" class="w-full h-full object-cover ${book.isDNF ? 'grayscale opacity-50' : (book.isToRead ? 'saturate-[.35] brightness-95' : '')}">` : `<span class="text-slate-100 font-black text-6xl">?</span>`}
+                            ${book.cover ? `<img loading="lazy" decoding="async" src="${escapeBookHtml(book.cover)}" referrerpolicy="no-referrer" class="w-full h-full object-cover ${book.isDNF ? 'grayscale opacity-50' : (book.isToRead ? 'saturate-[.35] brightness-95' : '')}">` : `<span class="text-slate-100 font-black text-6xl">?</span>`}
                         </div>
                         <div class="flex-1">
                             <div class="relative mb-6">
-                                <h2 class="fiche-title">${book.title || 'SANS TITRE'}</h2>
-                                <h3 class="fiche-author !mb-0">${book.author || 'AUTEUR INCONNU'}</h3>
-                                ${book.saga ? `<div class="fiche-saga-row"><button type="button" class="saga-trigger saga-chip" onclick="openSagaBubble(${book.id}, event)" title="Voir tous les livres de la saga"><span class="saga-chip-name">${book.saga}</span>${parseInt(book.sagaNum, 10) ? `<span class="saga-chip-num">#${parseInt(book.sagaNum, 10)}</span>` : ''}</button></div>` : ''}
+                                <h2 class="fiche-title">${escapeBookHtml(book.title || 'SANS TITRE')}</h2>
+                                <h3 class="fiche-author !mb-0">${escapeBookHtml(book.author || 'AUTEUR INCONNU')}</h3>
+                                ${book.saga ? `<div class="fiche-saga-row"><button type="button" class="saga-trigger saga-chip" onclick="openSagaBubble(${book.id}, event)" title="Voir tous les livres de la saga"><span class="saga-chip-name">${escapeBookHtml(book.saga)}</span>${parseInt(book.sagaNum, 10) ? `<span class="saga-chip-num">#${parseInt(book.sagaNum, 10)}</span>` : ''}</button></div>` : ''}
                             </div>
                             <div class="mb-6">
                                 <p class="section-label">Note :</p>
                                 <div class="flex gap-1">${getRatingOrDnfHtml(book, "text-2xl")}</div>
                             </div>
                             <p class="section-label">Résumé :</p>
-                            <p class="fiche-summary">${book.summary || 'Aucun résumé.'}</p>
+                            <p class="fiche-summary">${escapeBookHtml(book.summary || 'Aucun résumé.')}</p>
                         </div>
                     </div>
                     <div class="info-grid">
-                        <div class="info-item"><p class="section-label">Début :</p><p class="info-value">${book.start || '—'}</p></div>
-                        <div class="info-item"><p class="section-label">Fin :</p><p class="info-value">${book.end || '—'}</p></div>
+                        <div class="info-item"><p class="section-label">Début :</p><p class="info-value">${escapeBookHtml(book.start || '—')}</p></div>
+                        <div class="info-item"><p class="section-label">Fin :</p><p class="info-value">${escapeBookHtml(book.end || '—')}</p></div>
                         <div class="info-item"><p class="section-label">Genre :</p><p class="info-value">${bookGenres(book.genre).join(' · ').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])) || '—'}</p></div>
-                        <div class="info-item"><p class="section-label">Année :</p><p class="info-value">${book.year || '—'}</p></div>
-                        <div class="info-item"><p class="section-label">Pages :</p><p class="info-value">${book.pages ? book.pages : '—'}</p></div>
-                        <div class="info-item"><p class="section-label">Format :</p><p class="info-value">${book.format || '—'}</p></div>
-                        <div class="info-item"><p class="section-label">Langue :</p><p class="info-value">${book.lang || '—'}</p></div>
+                        <div class="info-item"><p class="section-label">Année :</p><p class="info-value">${escapeBookHtml(book.year || '—')}</p></div>
+                        <div class="info-item"><p class="section-label">Pages :</p><p class="info-value">${escapeBookHtml(book.pages ? book.pages : '—')}</p></div>
+                        <div class="info-item"><p class="section-label">Format :</p><p class="info-value">${escapeBookHtml(book.format || '—')}</p></div>
+                        <div class="info-item"><p class="section-label">Langue :</p><p class="info-value">${escapeBookHtml(book.lang || '—')}</p></div>
                     </div>
                     <div class="mt-8">
                         <p class="section-label avis-label">Mon avis personnel :</p>
-                        <div class="avis-box"><p class="avis-text">${book.comment || 'Aucun commentaire.'}</p></div>
+                        <div class="avis-box"><p class="avis-text">${escapeBookHtml(book.comment || 'Aucun commentaire.')}</p></div>
                     </div>
                     <div class="mt-8 flex justify-end gap-3 items-center">
                         <button onclick="deleteBook(${book.id})" class="px-5 py-2 rounded-lg bg-red-50 text-red-400 font-bold uppercase text-[10px] tracking-widest hover:bg-red-100 transition-colors">Supprimer</button>
@@ -8670,15 +8677,15 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             const currentAuthorShelf = authorShelfSelect ? authorShelfSelect.value : 'all';
             const currentGenreShelf = genreShelfSelect ? genreShelfSelect.value : 'all';
 
-            genreSelect.innerHTML = `<option value="all">${t('filters.allGenres')}</option>` + genres.map(g => `<option value="${g}">${g}</option>`).join('');
-            authorSelect.innerHTML = `<option value="all">${t('filters.allAuthors')}</option>` + authors.map(a => `<option value="${a}">${a}</option>`).join('');
-            languageSelect.innerHTML = `<option value="all">${t('filters.allLanguages')}</option>` + languages.map(l => `<option value="${l}">${l}</option>`).join('');
+            genreSelect.innerHTML = `<option value="all">${t('filters.allGenres')}</option>` + genres.map(g => `<option value="${escapeBookHtml(g)}">${escapeBookHtml(g)}</option>`).join('');
+            authorSelect.innerHTML = `<option value="all">${t('filters.allAuthors')}</option>` + authors.map(a => `<option value="${escapeBookHtml(a)}">${escapeBookHtml(a)}</option>`).join('');
+            languageSelect.innerHTML = `<option value="all">${t('filters.allLanguages')}</option>` + languages.map(l => `<option value="${escapeBookHtml(l)}">${escapeBookHtml(l)}</option>`).join('');
             if (authorShelfSelect) {
-                authorShelfSelect.innerHTML = `<option value="all">${t('filters.allAuthors')}</option>` + authors.map(a => `<option value="${a}">${a}</option>`).join('');
+                authorShelfSelect.innerHTML = `<option value="all">${t('filters.allAuthors')}</option>` + authors.map(a => `<option value="${escapeBookHtml(a)}">${escapeBookHtml(a)}</option>`).join('');
                 authorShelfSelect.value = authors.includes(currentAuthorShelf) ? currentAuthorShelf : 'all';
             }
             if (genreShelfSelect) {
-                genreShelfSelect.innerHTML = `<option value="all">${t('filters.allGenres')}</option>` + genres.map(g => `<option value="${g}">${g}</option>`).join('');
+                genreShelfSelect.innerHTML = `<option value="all">${t('filters.allGenres')}</option>` + genres.map(g => `<option value="${escapeBookHtml(g)}">${escapeBookHtml(g)}</option>`).join('');
                 genreShelfSelect.value = genres.includes(currentGenreShelf) ? currentGenreShelf : 'all';
             }
 
