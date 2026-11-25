@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V59 — Test synchronisation</title>
+    <title>Nool — TEST V60 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -7232,7 +7232,8 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
                 const fresh=await readTestBooks(uid);
                 const baseline=testBaselines.get(uid);
                 if(!baseline||fresh.map.size!==baseline.size||[...fresh.map].some(([k,v])=>canonical(v)!==canonical(baseline.get(k))))throw new Error('Bibliothèque modifiée ailleurs : actualise avant de restaurer');
-                const expected=testMap(JSON.parse(JSON.stringify(data.books)));
+                const restoreBooks=JSON.parse(JSON.stringify(data.books));
+                const expected=testMap(restoreBooks, i=>'restore-v60-'+i);
                 const overlay=document.createElement('div');
                 overlay.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#222e;color:white;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px';
                 overlay.setAttribute('role','status'); overlay.setAttribute('aria-live','polite');
@@ -7240,13 +7241,18 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
                 const guard=e=>{e.preventDefault();e.returnValue='';};
                 window.addEventListener('beforeunload',guard);
                 try {
-                    await commitTestBooks(uid,JSON.parse(JSON.stringify(data.books)),profile,(done,total)=>{
+                    await commitTestBooks(uid,restoreBooks,profile,(done,total)=>{
                         const msg=backupText(`Restauration : ${done} / ${total} opérations. Ne ferme pas Nool.`,`Restoring: ${done} / ${total} operations. Do not close Nool.`);
                         overlay.textContent=msg;backupStatus(msg);
                     },before.profile);
                     overlay.textContent=backupText('Vérification des livres…','Checking books…');
                     const verified=await readTestBooks(uid);
                     if(verified.map.size!==expected.size||[...expected].some(([k,v])=>canonical(v)!==canonical(verified.map.get(k))))throw new Error('Vérification finale : données différentes du fichier');
+                } catch(error) {
+                    overlay.remove();
+                    await testDialog(backupText('Restauration interrompue. Conserve le fichier de sauvegarde. Nool va se recharger pour éviter toute modification depuis une bibliothèque obsolète. Réessaie avec le même fichier après reconnexion.','Restore interrupted. Keep your backup file. Nool will reload to avoid editing stale data. Retry with the same file after reconnecting.'),false);
+                    location.reload();
+                    throw error;
                 } finally {overlay.remove();window.removeEventListener('beforeunload',guard);}
                 try{for(const k of noolBackupKeys){const v=data.preferences?.[k];if(typeof v==='string')localStorage.setItem(k,v);}}catch(e){console.warn(e);}
                 alert(backupText('Restauration terminée. Nool va se recharger.','Restore complete. Nool will reload.'));location.reload();
@@ -7416,12 +7422,12 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             if(value && typeof value==='object') return '{'+Object.keys(value).sort().map(k=>JSON.stringify(k)+':'+canonical(value[k])).join(',')+'}';
             return JSON.stringify(value);
         }
-        function testMap(books) {
+        function testMap(books, fallback=()=>generateUid()) {
             const result=new Map();
-            for(const b of books) {
+            for(const [index,b] of books.entries()) {
                 // Les cases vides standard sont reconstruites localement.
                 if(!b.title && !b.uid && !b.author && !b.cover && !b.comment && !b.summary && !b.rating && !b.isFavorite && !b.isToRead && !b.isMyFavorite && !b.isAllTimeFavorite && !b.isDNF && !b.isBookClub && !b.genre && !b.start && !b.end && !b.pages && !b.saga && !b.year && !b.lang && (!b.format || b.format==='-') && !Object.keys(b).some(k=>k.startsWith('shelf'))) continue;
-                const key=b.uid || (b.uid=generateUid());
+                const key=b.uid || (b.uid=fallback(index));
                 if(key===testMarker || key.includes('/') || result.has(key)) throw new Error('Invalid or duplicate book UID');
                 result.set(key,b);
             }
@@ -7495,7 +7501,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
         async function retryRestore(action,enabled){
             for(let attempt=0;;attempt++){
                 try{return await action();}catch(e){
-                    if(!enabled||attempt>=3||!['unavailable','deadline-exceeded','aborted'].includes(e.code))throw e;
+                    if(!enabled||attempt>=5||!['unavailable','deadline-exceeded','aborted'].includes(e.code))throw e;
                     await new Promise(resolve=>setTimeout(resolve,2000*(attempt+1)));
                 }
             }
@@ -7676,18 +7682,40 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             try {
                 let {marker,map}=await readTestBooks(uid);
                 if(!marker) {
-                    if(map.size)throw new Error('Documents existants sans marqueur de migration');
                     const old=await getDocFromServer(doc(db,'users_libs',uid));
                     const original=old.exists()?old.data().books:[];
                     if(!Array.isArray(original))throw new Error('Invalid legacy library');
-                    const next=testMap(JSON.parse(JSON.stringify(original)));
-                    if(next.size>450)throw new Error('Migration : limite de 450 livres dépassée');
-                    const batch=writeBatch(db);
-                    for(const [key,b] of next)batch.set(testBookRef(uid,key),b);
-                    batch.set(testBookRef(uid,testMarker),{version:1,initialCount:next.size});
-                    await batch.commit();
+                    // Stable identifiers allow interrupted migrations to resume without duplicates.
+                    const copy=JSON.parse(JSON.stringify(original));
+                    const next=testMap(copy, i=>'legacy-v60-'+i);
+                    if([...map].some(([k,v])=>!next.has(k)||canonical(v)!==canonical(next.get(k))))throw new Error('Migration : documents existants incompatibles');
+                    const entries=[...next];
+                    for(let i=0;i<entries.length;i+=100){
+                        if(auth.currentUser?.uid!==uid)throw new Error('Compte modifié');
+                        const group=entries.slice(i,i+100);
+                        await retryRestore(()=>runTransaction(db,async tx=>{
+                            const markerRef=testBookRef(uid,testMarker);
+                            const markerSnap=await tx.get(markerRef);
+                            if(markerSnap.exists())throw new Error('Migration déjà terminée : reconnecte-toi');
+                            const refs=group.map(([k])=>testBookRef(uid,k));
+                            const snaps=await Promise.all(refs.map(r=>tx.get(r)));
+                            for(let j=0;j<group.length;j++){
+                                if(snaps[j].exists()&&canonical(snaps[j].data())!==canonical(group[j][1]))throw new Error('Conflit de migration');
+                                if(!snaps[j].exists())tx.set(refs[j],group[j][1]);
+                            }
+                        }),true);
+                    }
+                    const partial=await readTestBooks(uid);
+                    if(partial.map.size!==next.size||[...next].some(([k,v])=>canonical(v)!==canonical(partial.map.get(k))))throw new Error('Migration verification failed');
+                    await runTransaction(db,async tx=>{
+                        const ref=testBookRef(uid,testMarker);
+                        const mark=await tx.get(ref);
+                        const legacy=await tx.get(doc(db,'users_libs',uid));
+                        if(canonical(legacy.exists()?legacy.data().books:[])!==canonical(original))throw new Error('Ancienne bibliothèque modifiée');
+                        if(!mark.exists())tx.set(ref,{version:1,initialCount:next.size});
+                    });
                     const verified=await readTestBooks(uid);
-                    if(!verified.marker||verified.map.size!==next.size||[...next].some(([k,v])=>canonical(v)!==canonical(verified.map.get(k))))throw new Error('Migration verification failed');
+                    if(!verified.marker)throw new Error('Migration verification failed');
                     map=verified.map;
                 }
                 if(auth.currentUser?.uid!==uid)throw new Error('Account changed');
