@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V63 — Test synchronisation</title>
+    <title>Nool — TEST V65 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -4634,20 +4634,64 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             const status = document.getElementById('shelf-layout-status');
             if (status) status.textContent = message !== undefined ? message : (shelfLayoutDirty ? 'Non enregistré' : '');
         }
+        // V65: immutable content-addressed image documents, shared across layouts.
+        function decorationMaps(profile) {
+            return [profile.shelfDecorations, ...Object.values(profile.shelfLayouts || {}).map(l => l.decorations)].filter(Boolean);
+        }
+        async function packDecorationImages(uid, profile) {
+            const result = cloneShelfData(profile), pending = new Map();
+            for (const map of decorationMaps(result)) for (const d of Object.values(map)) {
+                for (const field of ['img','photo']) {
+                    const image = d[field];
+                    if (typeof image !== 'string' || !image.startsWith('data:image/')) continue;
+                    if (!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(image)) throw new Error('Format image invalide');
+                    const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(image))), b=>b.toString(16).padStart(2,'0')).join('');
+                    const parts = image.match(/.{1,200000}/g);
+                    d[field] = 'nool-image:'+hash+':'+parts.length;
+                    parts.forEach((part,i)=>pending.set(hash+'_'+i,part));
+                }
+            }
+            for (const [id,image] of pending) {
+                if(auth.currentUser?.uid!==uid) throw new Error('Compte modifié');
+                const ref=doc(db,'user_profiles',uid,'decorations',id);
+                const existing=await getDocFromServer(ref);
+                if(!existing.exists() || existing.data().image!==image) await setDoc(ref,{image});
+            }
+            return result;
+        }
+        async function unpackDecorationImages(uid, profile) {
+            const result=cloneShelfData(profile), cache=new Map();
+            for(const map of decorationMaps(result)) for(const d of Object.values(map)) for(const field of ['img','photo']) {
+                const match=typeof d[field]==='string' && /^nool-image:([a-f0-9]{64}):([1-9][0-9]*)$/.exec(d[field]);
+                if(!match) continue;
+                if(Number(match[2])>100) throw new Error('Image trop volumineuse');
+                if(!cache.has(d[field])) {
+                    const parts=await Promise.all(Array.from({length:Number(match[2])},(_,i)=>getDoc(doc(db,'user_profiles',uid,'decorations',match[1]+'_'+i))));
+                    if(parts.some(p=>!p.exists()||typeof p.data().image!=='string')) throw new Error('Décoration manquante');
+                    const image=parts.map(p=>p.data().image).join('');
+                    const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(image))),b=>b.toString(16).padStart(2,'0')).join('');
+                    if(hash!==match[1]||!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(image)) throw new Error('Image invalide');
+                    cache.set(d[field],image);
+                }
+                d[field]=cache.get(d[field]);
+            }
+            return result;
+        }
+        let shelfImagesLoadFailed = false;
         function persistShelfLayouts() {
             if (!currentUser) return Promise.resolve();
-            const snapshot = cloneShelfData(shelfLayouts);
-            const activeId = activeShelfLayoutId;
-            const uid = currentUser.uid;
+            const snapshot = cloneShelfData(shelfLayouts), activeId = activeShelfLayoutId, uid = currentUser.uid;
+            const selected = snapshot[activeId];
             updateShelfLayoutStatus('Enregistrement…');
-            shelfLayoutSaving = shelfLayoutSaving.catch(() => {}).then(async () => {
-                await setDoc(doc(db, 'user_profiles', uid),
-                    { shelfLayouts: snapshot, activeShelfLayoutId: activeId },
-                    { mergeFields: ['shelfLayouts', 'activeShelfLayoutId'] });
-                updateShelfLayoutStatus();
-            }).catch(err => {
-                updateShelfLayoutStatus('Erreur de sauvegarde');
-                console.error('Sauvegarde des dispositions :', err);
+            shelfLayoutSaving = shelfLayoutSaving.catch(()=>{}).then(async()=>{
+                if(shelfImagesLoadFailed || auth.currentUser?.uid!==uid) throw new Error('Recharge les décorations avant de sauvegarder');
+                const packed=await packDecorationImages(uid,{shelfLayouts:snapshot,activeShelfLayoutId:activeId,shelfPositions:selected.positions,shelfDecorations:selected.decorations,shelfRowCount:selected.rows,shelfDecorCleanupV1:true});
+                if(auth.currentUser?.uid!==uid) throw new Error('Compte modifié');
+                await setDoc(doc(db,'user_profiles',uid),packed,{mergeFields:Object.keys(packed)});
+                if(auth.currentUser?.uid===uid) updateShelfLayoutStatus(shelfLayoutDirty?'Non enregistré':'Enregistré');
+            }).catch(err=>{
+                if(auth.currentUser?.uid===uid){shelfLayoutDirty=true;updateShelfLayoutStatus('Erreur de sauvegarde');alert('Les dispositions ne sont pas enregistrées. Ne recharge pas la page avant de réessayer.');}
+                console.error('Sauvegarde des dispositions :',err);
             });
             return shelfLayoutSaving;
         }
@@ -4719,12 +4763,6 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             shelfLayoutDirty = false;
             updateShelfLayoutStatus();
             await persistShelfLayouts();
-            // Champs historiques mis à jour uniquement après validation explicite.
-            try {
-                await setDoc(doc(db, 'user_profiles', currentUser.uid),
-                    { shelfPositions: cloneShelfData(shelfPositions), shelfDecorations: cloneShelfData(shelfDecorations), shelfRowCount: SHELF_ROW_COUNT },
-                    { mergeFields: ['shelfPositions', 'shelfDecorations', 'shelfRowCount'] });
-            } catch (err) { console.error('Enregistrement étagère :', err); updateShelfLayoutStatus('Erreur de sauvegarde'); }
         };
         window.switchShelfLayout = async id => {
             if (!shelfLayouts[id] || id === activeShelfLayoutId) return;
@@ -7229,7 +7267,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             if(auth.currentUser?.uid!==uid || !books.marker) throw new Error('Library unavailable');
             const preferences={};
             for(const k of noolBackupKeys) {const v=localStorage.getItem(k);if(v!==null) preferences[k]=v;}
-            return {format:'nool-backup',version:1,createdAt:new Date().toISOString(),books:testArray(books.map),profile:profile.data()||{},preferences};
+            return {format:'nool-backup',version:1,createdAt:new Date().toISOString(),books:testArray(books.map),profile:await unpackDecorationImages(uid,profile.data()||{}),preferences};
         }
         function downloadNoolBackup(data,prefix='Nool-sauvegarde') {
             const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
@@ -7275,7 +7313,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
                     await commitTestBooks(uid,restoreBooks,profile,(done,total)=>{
                         const msg=backupText(`Restauration : ${done} / ${total} opérations. Ne ferme pas Nool.`,`Restoring: ${done} / ${total} operations. Do not close Nool.`);
                         overlay.textContent=msg;backupStatus(msg);
-                    },before.profile);
+                    },(await getDocFromServer(doc(db,'user_profiles',uid))).data()||{});
                     overlay.textContent=backupText('Vérification des livres…','Checking books…');
                     const verified=await readTestBooks(uid);
                     if(verified.map.size!==expected.size||[...expected].some(([k,v])=>canonical(v)!==canonical(verified.map.get(k))))throw new Error('Vérification finale : données différentes du fichier');
@@ -7320,8 +7358,13 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
                 SHELF_ROW_COUNT = 3;
                 let hasSeenTutorial = false;
                 let profileSnap = null;
+                shelfImagesLoadFailed = false;
                 try {
                     profileSnap = await getDoc(doc(db, "user_profiles", user.uid));
+                    if(profileSnap.exists()) {
+                        try { const hydrated=await unpackDecorationImages(user.uid,profileSnap.data()); profileSnap={exists:()=>true,data:()=>hydrated}; }
+                        catch(e){shelfImagesLoadFailed=true;console.error(e);alert('Décorations indisponibles. Recharge Nool avant de modifier les dispositions.');}
+                    }
                     if (profileSnap.exists()) {
                         hasSeenTutorial = !!profileSnap.data().hasSeenTutorial;
                         const p = profileSnap.data().photo;
@@ -7355,14 +7398,9 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
                         if (profileSnap.data().shelfDecorations) {
                             shelfDecorations = profileSnap.data().shelfDecorations;
                         }
-                        if (!profileSnap.data().shelfDecorCleanupV1 && Object.keys(shelfDecorations).length > 0) {
-                            shelfDecorations = {};
-                            await setDoc(doc(db, "user_profiles", user.uid), { shelfDecorations: {}, shelfDecorCleanupV1: true }, { merge: true });
-                        } else if (!profileSnap.data().shelfDecorCleanupV1) {
-                            await setDoc(doc(db, "user_profiles", user.uid), { shelfDecorCleanupV1: true }, { merge: true });
-                        }
+
                     }
-                } catch (err) { /* pas grave si ça échoue, on retombe sur photoURL ou l'initiale */ }
+                } catch (err) { shelfImagesLoadFailed=true; console.error(err); }
                 // Migration transparente de l'ancienne disposition, sans perdre les livres.
                 if (profileSnap?.exists() && profileSnap.data().shelfLayouts && Object.keys(profileSnap.data().shelfLayouts).length) {
                     shelfLayouts = cloneShelfData(profileSnap.data().shelfLayouts);
@@ -7522,6 +7560,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             }
             if(profile!==null) {
                 const ref=doc(db,'user_profiles',uid);
+                profile=await packDecorationImages(uid,profile);
                 await retryRestore(()=>runTransaction(db,async tx=>{
                     const snap=await tx.get(ref), remote=snap.data()||{};
                     if(canonical(remote)!==canonical(originalProfile)&&canonical(remote)!==canonical(profile))throw new Error('Conflit : paramètres modifiés ailleurs');
