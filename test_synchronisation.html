@@ -5079,7 +5079,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             const distance=(r,g,b)=>Math.hypot(r-bg[0],g-bg[1],b-bg[2]);
             if(corners.some(v=>distance(...v)>35)) throw new Error('non-uniform-background');
             const seen=new Uint8Array(w*h), queue=new Int32Array(w*h); let head=0,tail=0;
-            function visit(i){if(seen[i])return;seen[i]=1;const j=i*4;if(distance(d[j],d[j+1],d[j+2])<=48)queue[tail++]=i;}
+            function visit(i){if(seen[i])return;seen[i]=1;const j=i*4;if(distance(d[j],d[j+1],d[j+2])<=18)queue[tail++]=i;}
             for(let x=0;x<w;x++){visit(x);visit((h-1)*w+x);}
             for(let y=0;y<h;y++){visit(y*w);visit(y*w+w-1);}
             while(head<tail){const i=queue[head++],x=i%w,y=Math.floor(i/w);d[i*4+3]=0;if(x)visit(i-1);if(x<w-1)visit(i+1);if(y)visit(i-w);if(y<h-1)visit(i+w);}
@@ -5099,7 +5099,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             if(Date.now()-lastDecorationRequest<15000){status.textContent='Patiente quelques secondes avant une nouvelle génération.';return;}
             lastDecorationRequest=Date.now(); decorationBusy=true;btn.disabled=true;btn.textContent='Création…';
             status.textContent='Génération de l’objet…';
-            const prompt=`Product photograph of ONE miniature shelf ornament. Exact subject description (French or English): ${desc}. Respect all requested colors, materials, pose and details. Realistic sculpted three-dimensional object, eye-level front view, entire silhouette visible including base, centered with generous margins. Flat uniform white background, no floor, no horizon, no cast shadow, no text, no watermark, no extra objects.`;
+            const prompt=`Studio product photograph of ONE isolated object. Exact subject description (French or English): ${desc}. Respect all requested colors, materials, pose and details. Realistic sculpted three-dimensional object, eye-level front view, entire silhouette visible, centered with generous margins. Flat uniform white background, no floor, no horizon, no cast shadow, no text, no watermark, no extra objects, no shelves, no furniture, no unwanted pedestal.`;
             const url=`https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512&nologo=true&seed=${Math.floor(Math.random()*1000000)}`;
             try {
                 let blob;
@@ -5131,12 +5131,15 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
                 status.textContent='Détourage de l’objet…';
                 let result, fallback=false;
                 try{result=await transparentDecorationDataUrl(blob);}catch{
-                    try{result=await transparentDecorationDataUrl(await removeUniformDecorationBackground(blob));fallback=true;}catch{
+                    try{
                         let timer;try{const cutout=await Promise.race([removeDecorationBackground(blob),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('cutout-timeout')),90000);})]);result=await transparentDecorationDataUrl(cutout);}finally{clearTimeout(timer);}
+                    }catch{
+                        if(!active())return;
+                        result=await transparentDecorationDataUrl(await removeUniformDecorationBackground(blob));fallback=true;
                     }
                 }
                 if(!active())return;
-                showCustomDecorationPreview(result);status.textContent=fallback?'Objet détouré localement. Vérifie les contours avant de valider.':'Objet prêt. Vérifie le résultat ou réessaie pour une autre version.';
+                showCustomDecorationPreview(result);status.textContent=fallback?'Détourage simplifié (IA indisponible). Vérifie les contours et les parties blanches avant de valider.':'Objet prêt. Vérifie le résultat ou réessaie pour une autre version.';
             }catch(e){if(active())status.textContent='Création indisponible ('+(e.message==='HTTP 429'?'limite atteinte, réessaie dans une minute':e.message==='HTTP 401'?'connexion requise':e.name==='AbortError'?'délai dépassé':/^HTTP \d+$/.test(e.message)?e.message:'génération ou détourage')+'). Aperçu précédent conservé. Tu peux importer un PNG transparent.';}
             finally{decorationBusy=false;btn.disabled=false;btn.textContent='Générer';}
         };
