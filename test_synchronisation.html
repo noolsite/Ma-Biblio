@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V61 — Test synchronisation</title>
+    <title>Nool — TEST V62 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -4001,7 +4001,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             <div class="mt-4 pt-4 border-t border-slate-100">
                 <p class="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-2" data-i18n="deco.customLabel">Ou décris l'objet que tu veux</p>
                 <div class="flex gap-2">
-                    <input id="custom-deco-input" type="text" placeholder="ex: petit vase bleu avec des fleurs" data-i18n-placeholder="deco.customPlaceholder" class="modal-input !mb-0 flex-1" onkeydown="if(event.key==='Enter'){event.preventDefault(); generateCustomDecoration();}">
+                    <input id="custom-deco-input" type="text" maxlength="240" placeholder="ex: petit vase bleu avec des fleurs" data-i18n-placeholder="deco.customPlaceholder" class="modal-input !mb-0 flex-1" onkeydown="if(event.key==='Enter'){event.preventDefault(); generateCustomDecoration();}">
                     <button id="custom-deco-generate-btn" onclick="generateCustomDecoration()" class="px-4 py-2 rounded-lg bg-[var(--gold-accent)] text-white text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity whitespace-nowrap" data-i18n="deco.customGenerate">Générer</button>
                 </div>
                 <div id="custom-deco-preview" class="hidden mt-3 flex flex-col items-center gap-2">
@@ -4957,7 +4957,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
         }
         window.useCustomDecorationFile = async (event) => {
             const file = event.target.files?.[0];
-            if (!file) return;
+            if (!file || decorationBusy) return;
             const status = document.getElementById('custom-deco-status');
             if (!file.type.startsWith('image/')) { status.textContent = 'Choisis une image.'; return; }
             try {
@@ -5036,7 +5036,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
         // Le canvas est transparent dès l'origine, sans détourage réseau.
         function makeLocalDecoration(description) {
             const d = description.toLocaleLowerCase('fr').replace(/œ/g, 'oe').replace(/æ/g, 'ae').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-            if (!/\b(coeur|heart)\b/.test(d)) return null;
+            if (!/^(?:(?:un|une|petit|grand|a|small|large)\s+)*(?:coeur|heart)(?:\s+(?:rouge|red|bleu|blue|rose|pink|violet|purple|vert|green|jaune|yellow|dore|gold|noir|black|blanc|white))*$/.test(d.trim())) return null;
             const c = document.createElement('canvas'); c.width = 360; c.height = 340;
             const ctx = c.getContext('2d');
             let color = '#d92840';
@@ -5044,7 +5044,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             else if (/rose|pink/.test(d)) color='#ed6c9d';
             else if (/violet|purple/.test(d)) color='#9551c8';
             else if (/vert|green/.test(d)) color='#3aa56a';
-            else if (/jaune|yellow|or|gold/.test(d)) color='#e9b82e';
+            else if (/jaune|yellow|dore|gold/.test(d)) color='#e9b82e';
             else if (/noir|black/.test(d)) color='#34303c';
             else if (/blanc|white/.test(d)) color='#e9e7e6';
             const heart = new Path2D();
@@ -5064,57 +5064,63 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             ctx.restore();
             return c.toDataURL('image/png');
         }
-        let customDecoAttempt = 0;
-        let customDecoLastDescription = "";
-        window.generateCustomDecoration = async (retry = false) => {
+        let decorationBusy = false;
+        let lastDecorationRequest = 0;
+        // Fond uniforme : ne retirer que les pixels reliés au bord de l'image.
+        async function removeUniformDecorationBackground(blob) {
+            const bitmap = await createImageBitmap(blob);
+            const c = document.createElement('canvas');
+            c.width = bitmap.width; c.height = bitmap.height;
+            const ctx = c.getContext('2d', {willReadFrequently:true});
+            ctx.drawImage(bitmap,0,0); bitmap.close?.();
+            const w=c.width,h=c.height, image=ctx.getImageData(0,0,w,h), d=image.data;
+            const corners=[0,w-1,(h-1)*w,w*h-1].map(i=>[d[i*4],d[i*4+1],d[i*4+2]]);
+            const bg=corners[0];
+            const distance=(r,g,b)=>Math.hypot(r-bg[0],g-bg[1],b-bg[2]);
+            if(corners.some(v=>distance(...v)>35)) throw new Error('non-uniform-background');
+            const seen=new Uint8Array(w*h), queue=new Int32Array(w*h); let head=0,tail=0;
+            function visit(i){if(seen[i])return;seen[i]=1;const j=i*4;if(distance(d[j],d[j+1],d[j+2])<=48)queue[tail++]=i;}
+            for(let x=0;x<w;x++){visit(x);visit((h-1)*w+x);}
+            for(let y=0;y<h;y++){visit(y*w);visit(y*w+w-1);}
+            while(head<tail){const i=queue[head++],x=i%w,y=Math.floor(i/w);d[i*4+3]=0;if(x)visit(i-1);if(x<w-1)visit(i+1);if(y)visit(i-w);if(y<h-1)visit(i+w);}
+            if(tail<w*h*.08 || tail>w*h*.92) throw new Error('uncertain-cutout');
+            ctx.putImageData(image,0,0);
+            return await new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(new Error('canvas')),'image/png'));
+        }
+        window.generateCustomDecoration = async () => {
             const desc = document.getElementById('custom-deco-input').value.trim();
-            if (!desc) return;
-            const btn = document.getElementById('custom-deco-generate-btn');
-            const status = document.getElementById('custom-deco-status');
-            if (!retry || desc !== customDecoLastDescription) customDecoAttempt = 0;
-            else customDecoAttempt++;
-            customDecoLastDescription = desc;
-            btn.disabled = true;
-            btn.textContent = 'Création…';
-            status.textContent = 'Génération de l’objet…';
-            const preview = document.getElementById('custom-deco-preview');
-            // Garder l'ancien aperçu en cas d'échec d'une nouvelle tentative.
-            // Les emojis ne sont pas des objets 3D : ne pas substituer un dessin
-            // à la demande de l'utilisateur. Utiliser le générateur d'images ci-dessous.
-            const localResult = makeLocalDecoration(desc);
-            if (localResult) {
-                showCustomDecorationPreview(localResult);
-                status.textContent = 'Cœur créé. Pour changer sa forme ou sa couleur, modifie la description puis relance la génération.';
-                btn.disabled = false;
-                btn.textContent = 'Générer';
-                return;
-            }
-            const prompt = `A single collectible miniature figurine of ${desc}, exquisitely detailed hand-painted 3D object, beautiful coherent materials and realistic proportions, premium tabletop ornament, upright in a stable standing pose, complete object including its feet or base visible, front three-quarter view, centered, fills 85 percent of the image, soft even studio lighting, crisp silhouette, isolated on a uniform solid light gray background, no cast shadow, no floor, no pedestal unless part of the object, no other objects, no text, no watermark, no border, no scenery`;
-            const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512&nologo=true&seed=${Math.floor(Math.random()*1000000)}`;
+            if (!desc || decorationBusy || !currentUser) return;
+            const uid=currentUser.uid;
+            const btn=document.getElementById('custom-deco-generate-btn');
+            const status=document.getElementById('custom-deco-status');
+            const active=()=>currentUser?.uid===uid && !document.getElementById('decoration-picker-modal').classList.contains('hidden');
+            const local=makeLocalDecoration(desc);
+            if(local){showCustomDecorationPreview(local);status.textContent='Cœur créé localement, sans connexion.';return;}
+            if(Date.now()-lastDecorationRequest<15000){status.textContent='Patiente quelques secondes avant une nouvelle génération.';return;}
+            lastDecorationRequest=Date.now(); decorationBusy=true;btn.disabled=true;btn.textContent='Création…';
+            status.textContent='Génération de l’objet…';
+            const prompt=`Product photograph of ONE miniature shelf ornament. Exact subject description (French or English): ${desc}. Respect all requested colors, materials, pose and details. Realistic sculpted three-dimensional object, eye-level front view, entire silhouette visible including base, centered with 12% empty margin on all sides. Flat uniform neutral gray background, no floor, no horizon, no cast shadow, no text, no watermark, no extra objects. Objet unique, respecter précisément la description.`;
+            const url=`https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512&nologo=true&seed=${Math.floor(Math.random()*1000000)}`;
             try {
-                const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 45000);
-                let response;
-                try { response = await fetch(url, { signal: controller.signal, mode: 'cors' }); }
-                finally { clearTimeout(timeout); }
-                if (!response.ok) throw new Error('generation-failed');
-                const blob = await response.blob();
-                if (!blob.type.startsWith('image/')) throw new Error('generation-failed');
-                status.textContent = 'Suppression du fond avec un modèle IA… (premier chargement parfois long)';
-                const cutout = await removeDecorationBackground(blob);
-                const dataUrl = await transparentDecorationDataUrl(cutout);
-                showCustomDecorationPreview(dataUrl);
-                status.textContent = 'Objet généré et recadré. Vérifie le résultat avant de valider. Tu peux réessayer pour obtenir une autre version.';
-            } catch (e) {
-                console.warn('Décoration : génération / détourage impossible', e);
-                status.textContent = 'La nouvelle tentative a échoué (service externe indisponible). L’aperçu précédent est conservé si tu en avais un. Tu peux réessayer ou importer une image.';
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Générer';
-            }
+                const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),60000);let blob;
+                try{const response=await fetch(url,{signal:controller.signal,mode:'cors'});if(!response.ok)throw new Error('HTTP '+response.status);blob=await response.blob();}finally{clearTimeout(timeout);}
+                if(!blob.type.startsWith('image/')||blob.size>8000000)throw new Error('invalid-image');
+                if(!active())return;
+                status.textContent='Détourage de l’objet…';
+                let result, fallback=false;
+                try{result=await transparentDecorationDataUrl(blob);}catch{
+                    try{result=await transparentDecorationDataUrl(await removeUniformDecorationBackground(blob));fallback=true;}catch{
+                        let timer;try{const cutout=await Promise.race([removeDecorationBackground(blob),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('cutout-timeout')),90000);})]);result=await transparentDecorationDataUrl(cutout);}finally{clearTimeout(timer);}
+                    }
+                }
+                if(!active())return;
+                showCustomDecorationPreview(result);status.textContent=fallback?'Objet détouré localement. Vérifie les contours avant de valider.':'Objet prêt. Vérifie le résultat ou réessaie pour une autre version.';
+            }catch(e){if(active())status.textContent='Création indisponible ('+(e.name==='AbortError'?'délai dépassé':/^HTTP \d+$/.test(e.message)?e.message:'génération ou détourage')+'). Aperçu précédent conservé. Tu peux importer un PNG transparent.';}
+            finally{decorationBusy=false;btn.disabled=false;btn.textContent='Générer';}
         };
 
         window.addGeneratedDecoration = () => {
+            if (decorationBusy) return;
             const preview = document.getElementById('custom-deco-preview');
             const url = preview.dataset.url;
             if (!url || !url.startsWith('data:image/')) return;
