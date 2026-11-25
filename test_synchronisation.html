@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V58 — Test synchronisation</title>
+    <title>Nool — TEST V59 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -4455,13 +4455,34 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
         let customPhotoUrl = null;
         let photoRemoved = false;
 
+        function safeAvatarUrl(value) {
+            if (typeof value !== 'string') return null;
+            if (/^data:image\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/i.test(value)) return value;
+            try {
+                const parsed = new URL(value);
+                return parsed.protocol === 'https:' && !parsed.username && !parsed.password ? parsed.href : null;
+            } catch { return null; }
+        }
+
         function paintAvatars(url, initial) {
-            const navAvatar = document.getElementById('profile-avatar-btn');
-            const photoWrap = document.getElementById('profile-photo-wrap');
+            const safeUrl = safeAvatarUrl(url);
             const themeColor = getComputedStyle(document.documentElement).getPropertyValue('--gold-accent').trim() || '#C5A059';
-            const html = url ? `<img src="${url}" referrerpolicy="no-referrer" class="w-full h-full object-cover">` : initial;
-            if (navAvatar) { navAvatar.innerHTML = html; navAvatar.style.background = themeColor; navAvatar.style.borderColor = themeColor; }
-            if (photoWrap) { photoWrap.innerHTML = html; photoWrap.style.background = themeColor; photoWrap.style.borderColor = themeColor; }
+            for (const id of ['profile-avatar-btn', 'profile-photo-wrap']) {
+                const el = document.getElementById(id);
+                if (!el) continue;
+                el.textContent = String(initial || '?');
+                if (safeUrl) {
+                    const img = document.createElement('img');
+                    img.referrerPolicy = 'no-referrer';
+                    img.className = 'w-full h-full object-cover';
+                    img.alt = '';
+                    img.onerror = () => { if (img.parentNode === el) el.textContent = String(initial || '?'); };
+                    el.replaceChildren(img);
+                    img.src = safeUrl;
+                }
+                el.style.background = themeColor;
+                el.style.borderColor = themeColor;
+            }
             document.getElementById('profile-photo-remove-btn')?.classList.toggle('hidden', !url);
         }
 
@@ -6838,11 +6859,18 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
 
         window.handlePhotoChange = (event) => {
             const file = event.target.files[0];
-            if (!file) return;
+            if (!file || !currentUser) return;
+            const photoOwner = currentUser.uid;
+            if (!/^image\/(jpeg|png|webp|gif|bmp|avif|heic|heif)$/i.test(file.type)) {
+                alert("Format de photo non pris en charge.");
+                event.target.value = "";
+                return;
+            }
             const reader = new FileReader();
             reader.onload = (e) => {
                 const img = new Image();
                 img.onload = async () => {
+                    if (currentUser?.uid !== photoOwner) return;
                     const canvas = document.createElement('canvas');
                     const size = 160;
                     canvas.width = size; canvas.height = size;
@@ -6859,13 +6887,15 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
                     paintAvatars(customPhotoUrl, initial);
 
                     try {
-                        await setDoc(doc(db, "user_profiles", currentUser.uid), { photo: dataUrl }, { merge: true });
+                        await setDoc(doc(db, "user_profiles", photoOwner), { photo: dataUrl }, { merge: true });
                     } catch (err) {
                         alert("Erreur lors de l'enregistrement de la photo : " + err.message);
                     }
                 };
+                img.onerror = () => alert("Impossible de lire cette photo.");
                 img.src = e.target.result;
             };
+            reader.onerror = () => alert("Impossible de lire ce fichier.");
             reader.readAsDataURL(file);
         };
 
