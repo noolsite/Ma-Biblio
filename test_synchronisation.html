@@ -3754,6 +3754,11 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
                         <p id="nool-backup-status" role="status" aria-live="polite" class="text-xs mt-4"></p>
                     </div>
 
+                    <div class="bg-white rounded-2xl border border-red-200 p-8">
+                        <p class="section-label mb-4">Suppression du compte</p>
+                        <p class="text-sm mb-4">Cette action efface définitivement tes données en ligne. Exporte une sauvegarde avant de continuer.</p>
+                        <button onclick="noolDeleteAccount()" class="px-5 py-3 rounded-xl border border-red-500 text-red-600 font-bold">Supprimer mon compte</button>
+                    </div>
                     <div id="profile-password-section" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-8 hidden">
                         <p class="section-label mb-4" data-i18n="account.changePassword">Changer le mot de passe</p>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-3">
@@ -4024,7 +4029,7 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, reauthenticateWithPopup, deleteUser, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, runTransaction, deleteDoc, getDocFromServer, writeBatch, collection, getDocsFromServer } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -7349,9 +7354,66 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
                 panel.append(card);document.body.append(panel);
             });
         }
+        let deletionBusy = false;
+        async function deleteNoolAccount(user) {
+            if (deletionBusy || auth.currentUser?.uid !== user.uid) return;
+            const uid = user.uid;
+            const lock = doc(db, 'account_deletions', uid);
+            deletionBusy = true;
+            try {
+                const existing = await getDocFromServer(lock);
+                if (!confirm(existing.exists() ? 'Reprendre la suppression définitive de ce compte ?' : 'Supprimer définitivement ce compte, ses livres et ses décorations ? Cette action est irréversible.')) return;
+                if (prompt('Compte : '+user.email+'\nTape SUPPRIMER pour confirmer.') !== 'SUPPRIMER') return;
+                if (user.providerData.some(p => p.providerId === 'password')) {
+                    const password = prompt('Confirme ton mot de passe actuel :');
+                    if (!password) return;
+                    await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email,password));
+                } else if (user.providerData.some(p => p.providerId === 'google.com')) {
+                    await reauthenticateWithPopup(user,new GoogleAuthProvider());
+                } else throw new Error('Mode de connexion non pris en charge.');
+                await user.getIdToken(true);
+                if (auth.currentUser?.uid !== uid) throw new Error('Compte modifié.');
+                if (!existing.exists()) await setDoc(lock,{deleting:true});
+                if (!(await getDocFromServer(lock)).exists()) throw new Error('Verrou absent.');
+                const profile = doc(db,'user_profiles',uid);
+                const lib = doc(db,'users_libs',uid);
+                const snap = await getDocFromServer(profile);
+                const pseudo = String(snap.data()?.pseudo || '').trim().toLowerCase();
+                for (const path of [['users_libs',uid,'books'],['user_profiles',uid,'decorations']]) {
+                    const entries = await getDocsFromServer(collection(db,...path));
+                    for(let i=0;i<entries.docs.length;i+=400) {
+                        const batch=writeBatch(db);
+                        entries.docs.slice(i,i+400).forEach(d=>batch.delete(d.ref));
+                        await batch.commit();
+                    }
+                    if (!(await getDocsFromServer(collection(db,...path))).empty) throw new Error('Données restantes.');
+                }
+                await runTransaction(db,async tx=>{
+                    const ref = pseudo ? doc(db,'usernames',pseudo) : null;
+                    const name = ref ? await tx.get(ref) : null;
+                    if(name?.exists() && name.data().uid===uid) tx.delete(ref);
+                    tx.delete(profile); tx.delete(lib);
+                });
+                for(const key of Object.keys(localStorage)) if(key.startsWith('nool-v11-pending:'+uid+':')) localStorage.removeItem(key);
+                await deleteUser(user);
+                alert('Compte supprimé.');
+                location.reload();
+            } catch(e) {
+                console.error('Suppression du compte',e);
+                alert('Suppression non terminée : '+(e.code || e.message)+'\nSi le compte est verrouillé, reconnecte-toi pour reprendre.');
+            } finally { deletionBusy=false; }
+        }
+        window.noolDeleteAccount = () => { if(auth.currentUser) void deleteNoolAccount(auth.currentUser); };
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
+                try {
+                    if ((await getDocFromServer(doc(db,'account_deletions',user.uid))).exists()) {
+                        await deleteNoolAccount(user);
+                        if(auth.currentUser?.uid===user.uid) await signOut(auth);
+                        return;
+                    }
+                } catch(e) { console.error('Vérification du verrou',e); }
                 customPhotoUrl = null;
                 photoRemoved = false;
                 currentPseudo = null;
