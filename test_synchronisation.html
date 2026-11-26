@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nool — TEST V65 — Test synchronisation</title>
+    <title>Nool — TEST V66 — Test synchronisation</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nool">
@@ -4639,16 +4639,21 @@ html.dark:has(#section-fiches.active) :is(#fiche-top-pager,#fiche-bottom-pager) 
             return [profile.shelfDecorations, ...Object.values(profile.shelfLayouts || {}).map(l => l.decorations)].filter(Boolean);
         }
         async function packDecorationImages(uid, profile) {
-            const result = cloneShelfData(profile), pending = new Map();
+            const result = cloneShelfData(profile), pending = new Map(), encoded = new Map();
             for (const map of decorationMaps(result)) for (const d of Object.values(map)) {
                 for (const field of ['img','photo']) {
                     const image = d[field];
                     if (typeof image !== 'string' || !image.startsWith('data:image/')) continue;
                     if (!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(image)) throw new Error('Format image invalide');
-                    const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(image))), b=>b.toString(16).padStart(2,'0')).join('');
-                    const parts = image.match(/.{1,200000}/g);
-                    d[field] = 'nool-image:'+hash+':'+parts.length;
-                    parts.forEach((part,i)=>pending.set(hash+'_'+i,part));
+                    // V66: hash and split each distinct image only once per save.
+                    if (!encoded.has(image)) {
+                        const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(image))), b=>b.toString(16).padStart(2,'0')).join('');
+                        const parts = image.match(/.{1,200000}/g);
+                        if (parts.length > 100) throw new Error('Image trop volumineuse');
+                        encoded.set(image, 'nool-image:'+hash+':'+parts.length);
+                        parts.forEach((part,i)=>pending.set(hash+'_'+i,part));
+                    }
+                    d[field] = encoded.get(image);
                 }
             }
             for (const [id,image] of pending) {
